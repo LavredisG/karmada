@@ -10,9 +10,8 @@ spec:
   placement:
     clusterAffinity:
       clusterNames:
-        - edge
-        - fog
-        - cloud
+        - member1
+        - member2
     replicaScheduling:
       replicaDivisionPreference: Weighted
       replicaSchedulingType: Divided
@@ -20,13 +19,9 @@ spec:
         staticWeightList:
           - targetCluster:
               clusterNames:
-                - edge
-            weight: 3
-          - targetCluster:
-              clusterNames:
-                - fog
+                - member1
             weight: 1
           - targetCluster:
               clusterNames:
-                - cloud
+                - member2
             weight: 1

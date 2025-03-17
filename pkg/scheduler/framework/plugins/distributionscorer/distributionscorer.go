@@ -101,13 +101,21 @@ func (r *DistributionScorer) NormalizeScore(ctx context.Context, scores framewor
 	klog.Infof("DistributionScorer: Generated %d possible distributions", len(distributions))
 
 	// Estimate metrics for each distribution
+	feasibleDistributions := []Distribution{}
 	for i := range distributions {
-		estimateDistributionMetrics(&distributions[i], clusterMetricsMap, r.cpuPerReplica, r.memoryPerReplica)
+		if estimateDistributionMetrics(&distributions[i], clusterMetricsMap, r.cpuPerReplica, r.memoryPerReplica) {
+			feasibleDistributions = append(feasibleDistributions, distributions[i])
+		}
 	}
+
+	if len(feasibleDistributions) == 0 {
+        klog.Warning("No feasible distributions found")
+        return framework.NewResult(framework.Error)
+    }
 
 	// Prepare AHP request
 	request := DistributionAHPRequest{
-		Distributions: distributions,
+		Distributions: feasibleDistributions,
 		Criteria: map[string]CriteriaConfig{
 			// For distributions, higher CPU and Memory values are BETTER (indicating more availability)
 			// "cpu":    {HigherIsBetter: true, Weight: 0.3},
@@ -126,7 +134,7 @@ func (r *DistributionScorer) NormalizeScore(ctx context.Context, scores framewor
 	}
 
 	// Find best distribution
-	bestDist := FindBestDistribution(distributions, ahpResponse)
+	bestDist := FindBestDistribution(feasibleDistributions, ahpResponse)
 	if bestDist == nil {
 		klog.Errorf("DistributionScorer: Failed to find best distribution")
 		return framework.NewResult(framework.Error)

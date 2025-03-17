@@ -8,69 +8,81 @@ import (
 
 // estimateDistributionMetrics calculates metrics for comparing distributions
 func estimateDistributionMetrics(dist *Distribution, clusterMetrics map[string]ClusterMetrics,
-	cpuPerReplica, memoryPerReplica int64) {
+	cpuPerReplica, memoryPerReplica int64) bool {
 
-	// Initialize metrics for this distribution
 	var totalPower, totalCost float64
 	nodesByCluster := make(map[string]float64)
 
-	// For each cluster in this distribution
+	// Fragmentation factor (20% overhead)
+	fragmentationFactor := 1.2
+
 	for clusterName, replicaCount := range dist.Allocation {
 		if metrics, exists := clusterMetrics[clusterName]; exists {
 			replicas := float64(replicaCount)
 
-			// Skip further calculations if no replicas assigned
+			// Handle clusters with no replicas assigned
 			if replicaCount == 0 {
-				// Consider baseline power for idle clusters
-				// totalPower += metrics.Metrics["power"] * 0.3 // 30% base power when idle
+				// Include baseline power/cost for idle clusters
+				basePower := metrics.Metrics["power"] * 0.3 // 30% base power when idle
+				baseCost := metrics.Metrics["cost"] * 0.3   // 30% base cost when idle
+				totalPower += basePower
+				totalCost += baseCost
+				klog.V(4).Infof("Cluster %s is idle (no replicas assigned). Base power: %.2f, Base cost: %.2f", clusterName, basePower, baseCost)
 				continue
+			}
+
+			// Validate replica requirements against node capacity
+			nodeCPUCapacity := metrics.Metrics["node_cpu_capacity"]
+			nodeMemoryCapacity := metrics.Metrics["node_memory_capacity"]
+
+			if cpuPerReplica > int64(nodeCPUCapacity) || memoryPerReplica > int64(nodeMemoryCapacity) {
+				klog.Warningf("Replica requirements exceed node capacity in cluster %s", clusterName)
+				return false // replica requirements exceed node capacity in at least 1 cluster
 			}
 
 			// Calculate resource requirements
 			totalCPURequired := float64(cpuPerReplica) * replicas
 			totalMemoryRequired := float64(memoryPerReplica) * replicas
 
-			// Get node capacity for this cluster type
-			nodeCPUCapacity := metrics.Metrics["node_cpu_capacity"]
-			nodeMemoryCapacity := metrics.Metrics["node_memory_capacity"]
-
-			// Calculate nodes needed for this cluster
+			// Calculate nodes needed (with fragmentation)
 			cpuNodesRequired := totalCPURequired / nodeCPUCapacity
 			memNodesRequired := totalMemoryRequired / nodeMemoryCapacity
-			nodesRequired := math.Ceil(math.Max(cpuNodesRequired, memNodesRequired))
+			nodesRequired := math.Ceil(math.Max(cpuNodesRequired, memNodesRequired) * fragmentationFactor)
+
+			// Enforce maxNodes constraint
+			if maxNodes, exists := metrics.Metrics["max_nodes"]; exists {
+				if nodesRequired > maxNodes {
+					klog.Warningf("Distribution %s is infeasible: Cluster %s cannot accommodate %.1f nodes (max: %.1f)",
+						dist.ID, clusterName, nodesRequired, maxNodes)
+					return false // Infeasible distribution
+				}
+			}
 
 			// Store nodes needed per cluster
 			nodesByCluster[clusterName] = nodesRequired
 
-			// Calculate power for this cluster
-			// Base power (30%) + active power (70% * nodes required)
-			// clusterPower := (metrics.Metrics["power"] * 0.3) +
-			//    (metrics.Metrics["power"] * 0.7 * nodesRequired)
+			// Calculate power and cost (based on worker nodes only)
 			nodePower := metrics.Metrics["power"]
-			clusterPower := nodePower * nodesRequired
-			totalPower += clusterPower
-
-			// Calculate cost for this cluster (based on nodes)
 			nodeCost := metrics.Metrics["cost"]
-			clusterCost := nodeCost * nodesRequired
-			totalCost += clusterCost
+			totalPower += nodePower * nodesRequired
+			totalCost += nodeCost * nodesRequired
 
 			klog.V(4).Infof("Cluster %s needs %.1f nodes, power: %.2f, cost: %.2f",
-				clusterName, nodesRequired, clusterPower, clusterCost)
+				clusterName, nodesRequired, nodePower*nodesRequired, nodeCost*nodesRequired)
 		} else {
 			klog.Warningf("No metrics found for cluster %s", clusterName)
+			return false // Infeasible distribution
 		}
 	}
 
-	// Store only the metrics we need for comparison
+	// Store metrics for feasible distributions
 	dist.Metrics["power"] = totalPower
 	dist.Metrics["cost"] = totalCost
 
-	// Store nodes by cluster (useful for reporting)
 	for cluster, nodes := range nodesByCluster {
 		dist.Metrics["nodes_"+cluster] = nodes
 	}
 
-	klog.V(4).Infof("Distribution %s: Power=%.2f, Cost=%.2f",
-		dist.ID, totalPower, totalCost)
+	klog.V(4).Infof("Distribution %s: Power=%.2f, Cost=%.2f", dist.ID, totalPower, totalCost)
+	return true // Feasible distribution 
 }

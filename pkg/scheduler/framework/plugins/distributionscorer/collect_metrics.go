@@ -41,7 +41,7 @@ func CollectMetrics(cluster *clusterv1alpha1.Cluster) ClusterMetrics {
 	}
 	metrics["power"] = power
 
-	// Get cost from cluster labels. If missing, default to 1.
+	
 	cost := 1.0
 	if c, exists := cluster.Labels["cost"]; exists {
 		if cf, err := strconv.ParseFloat(c, 64); err == nil {
@@ -49,6 +49,14 @@ func CollectMetrics(cluster *clusterv1alpha1.Cluster) ClusterMetrics {
 		}
 	}
 	metrics["cost"] = cost
+
+	maxNodes := 10000.0
+	if maxNodesString, exists := cluster.Labels["max_nodes"]; exists {
+		if maxNodesf, err := strconv.ParseFloat(maxNodesString, 64); err == nil {
+			maxNodes = maxNodesf
+		}
+	}
+	metrics["max_nodes"] = maxNodes
 
 	return ClusterMetrics{
 		Name:    cluster.Name,

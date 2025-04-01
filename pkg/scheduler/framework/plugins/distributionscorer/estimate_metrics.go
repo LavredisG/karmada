@@ -1,88 +1,228 @@
 package distributionscorer
 
 import (
-	"math"
+    "math"
 
-	"k8s.io/klog/v2"
+    "k8s.io/klog/v2"
 )
 
 // estimateDistributionMetrics calculates metrics for comparing distributions
 func estimateDistributionMetrics(dist *Distribution, clusterMetrics map[string]ClusterMetrics,
-	cpuPerReplica, memoryPerReplica int64) bool {
+    cpuPerReplica, memoryPerReplica int64) bool {
 
-	var totalPower, totalCost float64
-	nodesByCluster := make(map[string]float64)
+    klog.V(4).Infof("Estimating metrics for distribution %s", dist.ID)
 
-	// Fragmentation factor (20% overhead)
-	fragmentationFactor := 1.2
+    var totalPower, totalCost float64
+    nodesByCluster := make(map[string]float64)
 
-	for clusterName, replicaCount := range dist.Allocation {
-		if metrics, exists := clusterMetrics[clusterName]; exists {
-			replicas := float64(replicaCount)
+    // Fragmentation factor (20% overhead for worker nodes)
+    // Example: node of capacity 4 CPU, if each replica needs 3 CPU and we have 4 replicas
+    // then we would need 4 nodes (3+3+3+3) / 4 = 3.0. But a replica can't be split,
+    // so we need 4 nodes. The fragmentation factor accounts for this.
+    fragmentationFactor := 1.2
+    
 
-			// Handle clusters with no replicas assigned
-			if replicaCount == 0 {
-				// Include baseline power/cost for idle clusters
-				basePower := metrics.Metrics["power"] * 0.3 // 30% base power when idle
-				baseCost := metrics.Metrics["cost"] * 0.3   // 30% base cost when idle
-				totalPower += basePower
-				totalCost += baseCost
-				klog.V(4).Infof("Cluster %s is idle (no replicas assigned). Base power: %.2f, Base cost: %.2f", clusterName, basePower, baseCost)
-				continue
-			}
+    for clusterName, replicaCount := range dist.Allocation {
+        if metrics, exists := clusterMetrics[clusterName]; exists {
+            // Always add control plane's fixed power/cost (even if no replicas are assigned)
+            controlPlanePower := metrics.Metrics["master_power"]
+            controlPlaneCost := metrics.Metrics["master_cost"]
+            totalPower += controlPlanePower
+            totalCost += controlPlaneCost
 
-			// Validate replica requirements against node capacity
-			nodeCPUCapacity := metrics.Metrics["node_cpu_capacity"]
-			nodeMemoryCapacity := metrics.Metrics["node_memory_capacity"]
+            // Handle clusters with no replicas assigned
+            if replicaCount == 0 {
+                klog.V(4).Infof("Cluster %s is idle (control plane only). Power: %.2f, Cost: %.2f",
+                    clusterName, controlPlanePower, controlPlaneCost)
+                continue
+            }
 
-			if cpuPerReplica > int64(nodeCPUCapacity) || memoryPerReplica > int64(nodeMemoryCapacity) {
-				klog.Warningf("Replica requirements exceed node capacity in cluster %s", clusterName)
-				return false // replica requirements exceed node capacity in at least 1 cluster
-			}
+            // Validate replica requirements against worker node capacity
+            workerCPUCapacity := metrics.Metrics["worker_cpu_capacity"]
+            workerMemoryCapacity := metrics.Metrics["worker_memory_capacity"]
+            maxWorkerNodes := metrics.Metrics["max_worker_nodes"]
 
-			// Calculate resource requirements
-			totalCPURequired := float64(cpuPerReplica) * replicas
-			totalMemoryRequired := float64(memoryPerReplica) * replicas
+            // Check if a single replica exceeds worker node capacity
+            if cpuPerReplica > int64(workerCPUCapacity) || memoryPerReplica > int64(workerMemoryCapacity) {
+                klog.Warningf("Replica requirements exceed worker node capacity in cluster %s", clusterName)
+                return false // Reject distribution
+            }
 
-			// Calculate nodes needed (with fragmentation)
-			cpuNodesRequired := totalCPURequired / nodeCPUCapacity
-			memNodesRequired := totalMemoryRequired / nodeMemoryCapacity
-			nodesRequired := math.Ceil(math.Max(cpuNodesRequired, memNodesRequired) * fragmentationFactor)
+            // Calculate resource requirements for replicas
+            replicas := float64(replicaCount)
+            totalCPURequired := float64(cpuPerReplica) * replicas
+            totalMemoryRequired := float64(memoryPerReplica) * replicas
 
-			// Enforce maxNodes constraint
-			if maxNodes, exists := metrics.Metrics["max_nodes"]; exists {
-				if nodesRequired > maxNodes {
-					klog.Warningf("Distribution %s is infeasible: Cluster %s cannot accommodate %.1f nodes (max: %.1f)",
-						dist.ID, clusterName, nodesRequired, maxNodes)
-					return false // Infeasible distribution
-				}
-			}
+            // Calculate worker nodes needed (with fragmentation)
+            cpuNodesRequired := totalCPURequired / workerCPUCapacity
+            memNodesRequired := totalMemoryRequired / workerMemoryCapacity
+            nodesRequired := math.Ceil(math.Max(cpuNodesRequired, memNodesRequired) * fragmentationFactor)
 
-			// Store nodes needed per cluster
-			nodesByCluster[clusterName] = nodesRequired
+            // Enforce max_worker_nodes constraint
+            if nodesRequired > maxWorkerNodes {
+                klog.Warningf("Distribution %s is infeasible: Cluster %s cannot accommodate %.1f worker nodes (max: %.1f)",
+                    dist.ID, clusterName, nodesRequired, maxWorkerNodes)
+                return false
+            }
 
-			// Calculate power and cost (based on worker nodes only)
-			nodePower := metrics.Metrics["power"]
-			nodeCost := metrics.Metrics["cost"]
-			totalPower += nodePower * nodesRequired
-			totalCost += nodeCost * nodesRequired
+            // Store worker nodes needed for this cluster
+            nodesByCluster[clusterName] = nodesRequired
 
-			klog.V(4).Infof("Cluster %s needs %.1f nodes, power: %.2f, cost: %.2f",
-				clusterName, nodesRequired, nodePower*nodesRequired, nodeCost*nodesRequired)
-		} else {
-			klog.Warningf("No metrics found for cluster %s", clusterName)
-			return false // Infeasible distribution
-		}
-	}
+            // Calculate worker node power and cost
+            workerPower := metrics.Metrics["worker_power"]
+            workerCost := metrics.Metrics["worker_cost"]
+            totalPower += workerPower * nodesRequired
+            totalCost += workerCost * nodesRequired
 
-	// Store metrics for feasible distributions
-	dist.Metrics["power"] = totalPower
-	dist.Metrics["cost"] = totalCost
+            klog.V(4).Infof("Cluster %s needs %.1f worker nodes, power: %.2f, cost: %.2f",
+                clusterName, nodesRequired, workerPower*nodesRequired, workerCost*nodesRequired)
+        } else {
+            klog.Warningf("No metrics found for cluster %s", clusterName)
+            return false
+        }
+    }
 
-	for cluster, nodes := range nodesByCluster {
-		dist.Metrics["nodes_"+cluster] = nodes
-	}
+    // Store metrics for feasible distributions
+    dist.Metrics["power"] = totalPower
+    dist.Metrics["cost"] = totalCost
 
-	klog.V(4).Infof("Distribution %s: Power=%.2f, Cost=%.2f", dist.ID, totalPower, totalCost)
-	return true // Feasible distribution 
+    // Calculate resource efficiency metric
+    resourceEfficiency := calculateResourceEfficiency(dist, clusterMetrics, cpuPerReplica, memoryPerReplica, nodesByCluster)
+    dist.Metrics["resource_efficiency"] = resourceEfficiency
+    
+    // Calculate load balance metric (standard deviation)
+    loadBalanceStdDev := calculateLoadBalanceStdDev(dist, clusterMetrics, nodesByCluster)
+    dist.Metrics["load_balance_std_dev"] = loadBalanceStdDev
+
+	weightedLatency := calculateWeightedLatency(dist, clusterMetrics)
+	dist.Metrics["weighted_latency"] = weightedLatency
+
+    for cluster, nodes := range nodesByCluster {
+        dist.Metrics["worker_nodes_"+cluster] = nodes // Use "worker_nodes" prefix for clarity
+    }
+
+    klog.V(4).Infof("Distribution %s: Total Power=%.2f, Total Cost=%.2f, Resource Efficiency=%.2f, Load Balance StdDev=%.2f, WeightedLatency=%.2f",
+        dist.ID, totalPower, totalCost, resourceEfficiency, loadBalanceStdDev, weightedLatency)
+    return true // Feasible distribution
+}
+
+// calculateResourceEfficiency calculates the resource efficiency score for a distribution
+func calculateResourceEfficiency(dist *Distribution, clusterMetrics map[string]ClusterMetrics,
+    cpuPerReplica, memoryPerReplica int64, nodesByCluster map[string]float64) float64 {
+    
+    resourceEfficiency := 0.0
+    clusterCount := 0
+    
+    for clusterName, replicaCount := range dist.Allocation {
+        if replicaCount == 0 {
+            continue // Skip clusters with no allocation
+        }
+        
+        metrics := clusterMetrics[clusterName]
+        workerCPUCapacity := metrics.Metrics["worker_cpu_capacity"]
+        workerMemoryCapacity := metrics.Metrics["worker_memory_capacity"]
+        maxWorkerNodes := metrics.Metrics["max_worker_nodes"]
+        nodesRequired := nodesByCluster[clusterName]
+        
+        // Calculate actual resource usage per node
+        cpuUtil := float64(replicaCount) * float64(cpuPerReplica) / (nodesRequired * workerCPUCapacity)
+        memUtil := float64(replicaCount) * float64(memoryPerReplica) / (nodesRequired * workerMemoryCapacity)
+        
+        // Packing efficiency (how well we use each node)
+        packingEff := (cpuUtil + memUtil) / 2
+        
+        // Spare capacity (how much room we leave for future allocations)
+        spareCapacity := 1.0 - (nodesRequired / maxWorkerNodes)
+        
+        // Combined efficiency: balance packing and spare capacity
+        clusterEff := packingEff * (0.5 + 0.5 * spareCapacity)
+        resourceEfficiency += clusterEff
+        clusterCount++
+        
+        // klog.V(4).Infof("Cluster %s efficiency: packing=%.2f, spare=%.2f, combined=%.2f",
+        //     clusterName, packingEff, spareCapacity, clusterEff)
+    }
+    
+    return resourceEfficiency / float64(clusterCount)
+}
+
+// calculateLoadBalanceStdDev calculates the load balance standard deviation for a distribution
+func calculateLoadBalanceStdDev(dist *Distribution, clusterMetrics map[string]ClusterMetrics,
+    nodesByCluster map[string]float64) float64 {
+    
+    loadRatios := make([]float64, 0, len(dist.Allocation))
+    
+    // Calculate load ratios (nodes used / max nodes) for each cluster
+    for clusterName := range dist.Allocation {
+        // Skip clusters with no node allocation
+        nodesRequired, exists := nodesByCluster[clusterName]
+        if !exists {
+            continue
+        }
+        
+        metrics := clusterMetrics[clusterName]
+        maxNodes := metrics.Metrics["max_worker_nodes"]
+        
+        // Calculate load ratio
+        loadRatio := nodesRequired / maxNodes
+        loadRatios = append(loadRatios, loadRatio)
+    }
+    
+    // Calculate standard deviation
+    return calculateStandardDeviation(loadRatios)
+}
+
+// calculateStandardDeviation calculates the standard deviation of a slice of float values
+func calculateStandardDeviation(values []float64) float64 {
+    if len(values) <= 1 {
+        return 0.0
+    }
+    
+    // Calculate mean
+    sum := 0.0
+    for _, v := range values {
+        sum += v
+    }
+    mean := sum / float64(len(values))
+    
+    // Calculate variance
+    sumSquaredDiff := 0.0
+    for _, v := range values {
+        diff := v - mean
+        sumSquaredDiff += diff * diff
+    }
+    variance := sumSquaredDiff / float64(len(values))
+    
+    // Return standard deviation
+    return math.Sqrt(variance)
+}
+
+// calculateWeightedLatency calculates the replica-weighted average latency for a distribution
+func calculateWeightedLatency(dist *Distribution, clusterMetrics map[string]ClusterMetrics) float64 {
+    totalLatencyWeight := 0.0
+    
+    // Get total replicas once from the distribution
+    totalReplicas := 0
+    for _, replicaCount := range dist.Allocation {
+        totalReplicas += replicaCount
+    }
+    
+    // Calculate total latency weight
+    for clusterName, replicaCount := range dist.Allocation {
+        if replicaCount == 0 {
+            continue // Skip clusters with no replicas
+        }
+        
+        metrics := clusterMetrics[clusterName]
+        // Read static latency value from cluster metrics
+        latency := metrics.Metrics["latency"]
+        
+        // Weight the latency by replica count
+        totalLatencyWeight += float64(replicaCount) * latency
+    }
+    
+    // Return weighted average latency
+    avgLatency := totalLatencyWeight / float64(totalReplicas)
+    // klog.V(5).Infof("Weighted average latency for distribution %s: %.2f", dist.ID, avgLatency)
+    return avgLatency
 }

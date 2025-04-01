@@ -1,4 +1,4 @@
-package distributionscorer	
+package distributionscorer
 
 import (
 	"strconv"
@@ -21,42 +21,54 @@ func CollectMetrics(cluster *clusterv1alpha1.Cluster) ClusterMetrics {
 
 	// Get power from cluster labels. If missing, default to 100.
 
-	if cpu, exists := cluster.Labels["node_cpu_capacity"]; exists {
+	if cpu, exists := cluster.Labels["worker_cpu_capacity"]; exists {
 		if cpuf, err := strconv.ParseFloat(cpu, 64); err == nil {
-			metrics["node_cpu_capacity"] = cpuf
+			metrics["worker_cpu_capacity"] = cpuf
 		}
 	}
 
-	if memory, exists := cluster.Labels["node_memory_capacity"]; exists {
+	if memory, exists := cluster.Labels["worker_memory_capacity"]; exists {
 		if memoryf, err := strconv.ParseFloat(memory, 64); err == nil {
-			metrics["node_memory_capacity"] = memoryf
+			metrics["worker_memory_capacity"] = memoryf
 		}
 	}
 
-	power := 100.0
-	if p, exists := cluster.Labels["power"]; exists {
-		if pf, err := strconv.ParseFloat(p, 64); err == nil {
-			power = pf
+	if power, exists := cluster.Labels["master_power"]; exists {
+		if powerf, err := strconv.ParseFloat(power, 64); err == nil {
+			metrics["master_power"] = powerf
 		}
 	}
-	metrics["power"] = power
 
-	
-	cost := 1.0
-	if c, exists := cluster.Labels["cost"]; exists {
-		if cf, err := strconv.ParseFloat(c, 64); err == nil {
-			cost = cf
+	if cost, exists := cluster.Labels["master_cost"]; exists {
+		if costf, err := strconv.ParseFloat(cost, 64); err == nil {
+			metrics["master_cost"] = costf
 		}
 	}
-	metrics["cost"] = cost
 
-	maxNodes := 10000.0
-	if maxNodesString, exists := cluster.Labels["max_nodes"]; exists {
-		if maxNodesf, err := strconv.ParseFloat(maxNodesString, 64); err == nil {
-			maxNodes = maxNodesf
+	if power, exists := cluster.Labels["worker_power"]; exists {
+		if powerf, err := strconv.ParseFloat(power, 64); err == nil {
+			metrics["worker_power"] = powerf
 		}
 	}
-	metrics["max_nodes"] = maxNodes
+
+	if cost, exists := cluster.Labels["worker_cost"]; exists {
+		if costf, err := strconv.ParseFloat(cost, 64); err == nil {
+			metrics["worker_cost"] = costf
+		}
+	}
+
+	// maxNodes := 10000.0
+	if maxNodes, exists := cluster.Labels["max_worker_nodes"]; exists {
+		if maxNodesf, err := strconv.ParseFloat(maxNodes, 64); err == nil {
+			metrics["max_worker_nodes"] = maxNodesf
+		}
+	}
+
+	if latency, exists := cluster.Labels["latency"]; exists {
+		if latencyf, err := strconv.ParseFloat(latency, 64); err == nil {
+			metrics["latency"] = latencyf
+		}
+	}
 
 	return ClusterMetrics{
 		Name:    cluster.Name,

@@ -93,8 +93,13 @@ func (r *DistributionScorer) NormalizeScore(ctx context.Context, scores framewor
 		}
 	}
 
-	klog.Infof("DistributionScorer: Generating distributions for %d replicas across %d clusters",
-		totalReplicas, len(clusterNames))
+	pluralSuffix := "s"
+	if totalReplicas == 1 {
+		pluralSuffix = ""
+	}
+
+	klog.Infof("DistributionScorer: Generating distributions for %d replica%s across %d clusters",
+		totalReplicas, pluralSuffix, len(clusterNames))
 
 	// Generate all possible distributions
 	distributions := GenerateAllDistributions(clusterNames, totalReplicas)
@@ -109,9 +114,9 @@ func (r *DistributionScorer) NormalizeScore(ctx context.Context, scores framewor
 	}
 
 	if len(feasibleDistributions) == 0 {
-        klog.Warning("No feasible distributions found")
-        return framework.NewResult(framework.Error)
-    }
+		klog.Warning("No feasible distributions found")
+		return framework.NewResult(framework.Error)
+	}
 
 	// Prepare AHP request
 	request := DistributionAHPRequest{
@@ -121,8 +126,11 @@ func (r *DistributionScorer) NormalizeScore(ctx context.Context, scores framewor
 			// "cpu":    {HigherIsBetter: true, Weight: 0.3},
 			// "memory": {HigherIsBetter: true, Weight: 0.2},
 			// Lower power and cost values are better
-			"power": {HigherIsBetter: false, Weight: 0.5},
-			"cost":  {HigherIsBetter: false, Weight: 0.5},
+			"power":                {HigherIsBetter: false, Weight: 0.25},
+			"cost":                 {HigherIsBetter: false, Weight: 0.25},
+			"resource_efficieny":   {HigherIsBetter: true, Weight: 0.15},
+			"load_balance_std_dev": {HigherIsBetter: false, Weight: 0.15},
+			"weighted_latency":     {HigherIsBetter: false, Weight: 0.2},
 		},
 	}
 
@@ -143,16 +151,43 @@ func (r *DistributionScorer) NormalizeScore(ctx context.Context, scores framewor
 	klog.Infof("DistributionScorer: Selected best distribution: %s with allocation: %v",
 		bestDist.ID, bestDist.Allocation)
 
+	// For Allocations where a cluster would get weight of 0 (no replicas)
+	// we instead assign it a weight of 1, but multiply the rest by a big constant
+	hasZeroAllocations := false
+	maxReplicas := 0
+
+	for _, replicaCount := range bestDist.Allocation {
+		if replicaCount == 0 {
+			hasZeroAllocations = true
+		}
+		if replicaCount > maxReplicas {
+			maxReplicas = replicaCount
+		}
+	}
+
 	// Update cluster scores based on replica allocation in best distribution
 	for i := range scores {
 		clusterName := scores[i].Cluster.Name
 		replicaCount := bestDist.Allocation[clusterName]
 
-		// Set score based on replica count (simple linear scaling)
-		scores[i].Score = int64(replicaCount)
+		if hasZeroAllocations {
+			if replicaCount > 0 {
+				const multiplier = 1000
+				// scores[i].Score = int64(maxReplicas * multiplier)
+				bestDist.Allocation[clusterName] = replicaCount * multiplier
+			} else {
+				// scores[i].Score = 1
+				bestDist.Allocation[clusterName] = 1
+			}
+		} else {
+			// scores[i].Score = int64(replicaCount)
+			bestDist.Allocation[clusterName] = replicaCount
+		}
 
-		klog.Infof("DistributionScorer: Set score for cluster %s to %d based on %d replicas",
-			clusterName, scores[i].Score, replicaCount)
+		// klog.Infof("DistributionScorer: Set score for cluster %s to %d based on %d replicas",
+		// 	clusterName, scores[i].Score, replicaCount)
+		klog.Infof("DistributionScorer: Set allocation for cluster %s to %d based on %d replicas",
+			clusterName, bestDist.Allocation[clusterName], replicaCount)
 	}
 
 	// Send updated scores to the updater service asynchronously

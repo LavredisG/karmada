@@ -21,7 +21,7 @@ spec:
           - targetCluster:
               clusterNames:
                 - edge
-            weight: 3
+            weight: 1
           - targetCluster:
               clusterNames:
                 - fog

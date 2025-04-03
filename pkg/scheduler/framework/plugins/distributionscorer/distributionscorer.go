@@ -126,11 +126,11 @@ func (r *DistributionScorer) NormalizeScore(ctx context.Context, scores framewor
 			// "cpu":    {HigherIsBetter: true, Weight: 0.3},
 			// "memory": {HigherIsBetter: true, Weight: 0.2},
 			// Lower power and cost values are better
-			"power":                {HigherIsBetter: false, Weight: 0.25},
-			"cost":                 {HigherIsBetter: false, Weight: 0.25},
-			"resource_efficieny":   {HigherIsBetter: true, Weight: 0.15},
-			"load_balance_std_dev": {HigherIsBetter: false, Weight: 0.15},
-			"weighted_latency":     {HigherIsBetter: false, Weight: 0.2},
+			"power":                 {HigherIsBetter: false, Weight: 0.25},
+			"cost":                  {HigherIsBetter: false, Weight: 0.25},
+			"resource_efficiency":   {HigherIsBetter: true, Weight: 0.15},
+			"load_balance_std_dev":  {HigherIsBetter: false, Weight: 0.15},
+			"weighted_latency":      {HigherIsBetter: false, Weight: 0.2},
 		},
 	}
 

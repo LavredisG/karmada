@@ -155,48 +155,49 @@ func calculateResourceEfficiency(dist *Distribution, clusterMetrics map[string]C
 func calculateLoadBalanceStdDev(dist *Distribution, clusterMetrics map[string]ClusterMetrics,
 	nodesByCluster map[string]float64) float64 {
 
-	loadRatios := make([]float64, 0, len(dist.Allocation))
+	loadRatios := make([]float64, 0, len(clusterMetrics))
 
-	// Calculate load ratios (nodes used / max nodes) for each cluster
-	for clusterName := range dist.Allocation {
-		// Skip clusters with no node allocation
+	// Calculate load ratios for ALL clusters in the metrics
+	for clusterName, metrics := range clusterMetrics {
+		maxNodes := metrics.Metrics["max_worker_nodes"]
 		nodesRequired, exists := nodesByCluster[clusterName]
 		if !exists {
-			continue
+			nodesRequired = 0 // No nodes required for this cluster
 		}
-
-		metrics := clusterMetrics[clusterName]
-		maxNodes := metrics.Metrics["max_worker_nodes"]
 
 		// Calculate load ratio
 		loadRatio := nodesRequired / maxNodes
 		loadRatios = append(loadRatios, loadRatio)
+
+		klog.V(5).Infof("Cluster %s load ratio: %.3f (nodes: %.1f/%.1f)",
+			clusterName, loadRatio, nodesRequired, maxNodes)
 	}
 
-	// Calculate standard deviation
-	return calculateStandardDeviation(loadRatios)
+	stdDev := calculateStandardDeviation(loadRatios)
+	klog.V(5).Infof("Load balance std dev for distribution %s: %.3f", dist.ID, stdDev)
+	return stdDev
 }
 
 // calculateStandardDeviation calculates the standard deviation of a slice of float values
-func calculateStandardDeviation(values []float64) float64 {
-	if len(values) <= 1 {
+func calculateStandardDeviation(loadRatios []float64) float64 {
+	if len(loadRatios) <= 1 {
 		return 0.0
 	}
 
 	// Calculate mean
 	sum := 0.0
-	for _, v := range values {
+	for _, v := range loadRatios {
 		sum += v
 	}
-	mean := sum / float64(len(values))
+	meanLoadRatio := sum / float64(len(loadRatios))
 
 	// Calculate variance
 	sumSquaredDiff := 0.0
-	for _, v := range values {
-		diff := v - mean
+	for _, v := range loadRatios {
+		diff := v - meanLoadRatio
 		sumSquaredDiff += diff * diff
 	}
-	variance := sumSquaredDiff / float64(len(values))
+	variance := sumSquaredDiff / float64(len(loadRatios))
 
 	// Return standard deviation
 	return math.Sqrt(variance)

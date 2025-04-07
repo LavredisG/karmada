@@ -87,11 +87,11 @@ func estimateDistributionMetrics(dist *Distribution, clusterMetrics map[string]C
 
 	// Calculate resource efficiency metric
 	resourceEfficiency := calculateResourceEfficiency(dist, clusterMetrics, cpuPerReplica, memoryPerReplica, nodesByCluster)
-	dist.Metrics["resource_efficiency"] = resourceEfficiency
+	dist.Metrics["resource_efficiency"] = math.Floor(resourceEfficiency*1000) / 1000 // Round to 3 decimal places
 
 	// Calculate load balance metric (standard deviation)
 	loadBalanceStdDev := calculateLoadBalanceStdDev(dist, clusterMetrics, nodesByCluster)
-	dist.Metrics["load_balance_std_dev"] = loadBalanceStdDev
+	dist.Metrics["load_balance_std_dev"] = math.Floor(loadBalanceStdDev*1000) / 1000 // Round to 3 decimal places
 
 	weightedLatency := calculateWeightedLatency(dist, clusterMetrics)
 	dist.Metrics["weighted_latency"] = weightedLatency
@@ -100,8 +100,8 @@ func estimateDistributionMetrics(dist *Distribution, clusterMetrics map[string]C
 		dist.Metrics["worker_nodes_"+cluster] = nodes // Use "worker_nodes" prefix for clarity
 	}
 
-	klog.V(4).Infof("Distribution %s: Total Power=%.2f, Total Cost=%.2f, Resource Efficiency=%.2f, Load Balance StdDev=%.2f, WeightedLatency=%.2f",
-		dist.ID, totalPower, totalCost, resourceEfficiency, loadBalanceStdDev, weightedLatency)
+	klog.V(4).Infof("Distribution %s: Total Power=%.2f, Total	 Cost=%.2f, Resource Efficiency=%.3f, Load Balance StdDev=%.3f, WeightedLatency=%.2f",
+		dist.ID, totalPower, totalCost, dist.Metrics["resource_efficiency"], dist.Metrics["load_balance_std_dev"], weightedLatency)
 	return true // Feasible distribution
 }
 
@@ -147,7 +147,7 @@ func calculateResourceEfficiency(dist *Distribution, clusterMetrics map[string]C
 	}
 
 	// log
-	klog.V(4).Infof("Total resource efficiency for distribution %s: %.2f", dist.ID, resourceEfficiency)
+	klog.V(4).Infof("Total resource efficiency for distribution %s: %.3f", dist.ID, resourceEfficiency/float64(clusterCount))
 	return resourceEfficiency / float64(clusterCount)
 }
 

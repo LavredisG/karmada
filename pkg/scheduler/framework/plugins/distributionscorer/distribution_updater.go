@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	distributionUpdaterEndpoint = "http://172.18.0.1:5000/score"
+	distributionUpdaterEndpoint = "http://172.18.0.1:6001/score"
 )
 
 // UpdateClusterScores sends the scores from the best distribution to the updater server

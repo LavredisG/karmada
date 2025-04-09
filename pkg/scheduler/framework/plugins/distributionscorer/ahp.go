@@ -50,7 +50,7 @@ func FindBestDistribution(distributions []Distribution, scores *DistributionAHPR
 	var bestScore int64 = -1
 
 	for _, distScore := range scores.Scores {
-		klog.V(4).Infof("Distribution %s scored %d", distScore.ID, distScore.Score)
+		klog.V(4).Infof("\033[32mDistribution %s scored %d\033[0m", distScore.ID, distScore.Score)
 		if distScore.Score > bestScore {
 			bestScore = distScore.Score
 			// Find matching distribution

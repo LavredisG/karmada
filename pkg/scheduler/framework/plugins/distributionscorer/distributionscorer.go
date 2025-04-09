@@ -2,13 +2,53 @@ package distributionscorer
 
 import (
 	"context"
+	// "net/http"
 	"sync"
 
 	clusterv1alpha1 "github.com/karmada-io/karmada/pkg/apis/cluster/v1alpha1"
 	workv1alpha2 "github.com/karmada-io/karmada/pkg/apis/work/v1alpha2"
 	"github.com/karmada-io/karmada/pkg/scheduler/framework"
 	"k8s.io/klog/v2"
+
+	// "github.com/prometheus/client_golang/prometheus"
+	// "github.com/prometheus/client_golang/prometheus/promhttp"
 )
+
+// var (
+// 	finalDistribution = prometheus.NewGaugeVec(
+// 		prometheus.GaugeOpts{
+// 			Name: "final_distribution_allocation",
+// 			Help: "Final distribution allocation per cluster",
+// 		},
+// 		[]string{"cluster"},
+// 	)
+// 	cpuUsage = prometheus.NewGaugeVec(
+// 		prometheus.GaugeOpts{
+// 			Name: "cpu_usage_per_cluster",
+// 			Help: "CPU usage per cluster in millicores",
+// 		},
+// 		[]string{"cluster"},
+// 	)
+// 	costMetrics = prometheus.NewGaugeVec(
+// 		prometheus.GaugeOpts{
+// 			Name: "cost_metrics_per_cluster",
+// 			Help: "Cost metrics per cluster",
+// 		},
+// 		[]string{"cluster"},
+// 	)
+// )
+
+// func init() {
+// 	prometheus.MustRegister(finalDistribution)
+// 	prometheus.MustRegister(cpuUsage)
+// 	prometheus.MustRegister(costMetrics)
+
+// 	// Start HTTP server for Prometheus metrics
+// 	go func() {
+// 		http.Handle("/metrics", promhttp.Handler())
+// 		http.ListenAndServe(":8080", nil)
+// 	}()
+// }
 
 const (
 	Name = "DistributionScorer"
@@ -80,7 +120,7 @@ func (r *DistributionScorer) NormalizeScore(ctx context.Context, scores framewor
 	for i, score := range scores {
 		clusterNameList[i] = score.Cluster.Name
 	}
-	klog.Infof("Processing clusters in order: %v", clusterNameList)
+	klog.Infof("\033[32mProcessing clusters in order: %v\033[0m", clusterNameList)
 
 	totalReplicas := int(r.totalReplicas)
 
@@ -89,7 +129,7 @@ func (r *DistributionScorer) NormalizeScore(ctx context.Context, scores framewor
 		return framework.NewResult(framework.Success)
 	}
 
-	// Get cluster names and build cluster metrics map (NOTE: (cloud,edge,fog))
+	// Get cluster names and build cluster metrics map
 	clusterNames := make([]string, 0, len(scores))
 	clusterMetricsMap := make(map[string]ClusterMetrics)
 
@@ -195,6 +235,15 @@ func (r *DistributionScorer) NormalizeScore(ctx context.Context, scores framewor
 		klog.Infof("DistributionScorer: Set allocation for cluster %s to %d based on %d replicas",
 			clusterName, bestDist.Allocation[clusterName], replicaCount)
 	}
+
+	// Update Prometheus metrics
+	// for clusterName, replicaCount := range bestDist.Allocation {
+	// 	finalDistribution.WithLabelValues(clusterName).Set(float64(replicaCount))
+	// 	if metrics, ok := clusterMetricsMap[clusterName]; ok {
+	// 		cpuUsage.WithLabelValues(clusterName).Set(metrics.Metrics["worker_cpu_capacity"])
+	// 		costMetrics.WithLabelValues(clusterName).Set(metrics.Metrics["worker_cost"])
+	// 	}
+	// }
 
 	// Send updated scores to the updater service asynchronously
 	// NOTICE: THIS CAUSES THE SCORES TO BE UPDATED TWICE

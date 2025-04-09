@@ -73,8 +73,8 @@ func estimateDistributionMetrics(dist *Distribution, clusterMetrics map[string]C
 			totalPower += workerPower * nodesRequired
 			totalCost += workerCost * nodesRequired
 
-			klog.V(4).Infof("Cluster %s needs %.1f worker nodes, power: %.2f, cost: %.2f",
-				clusterName, nodesRequired, workerPower*nodesRequired, workerCost*nodesRequired)
+			klog.V(4).Infof("Cluster %s needs %d worker nodes, power: %.2f, cost: %.2f",
+				clusterName, int(nodesRequired), workerPower*nodesRequired, workerCost*nodesRequired)
 		} else {
 			klog.Warningf("No metrics found for cluster %s", clusterName)
 			return false
@@ -100,7 +100,7 @@ func estimateDistributionMetrics(dist *Distribution, clusterMetrics map[string]C
 		dist.Metrics["worker_nodes_"+cluster] = nodes // Use "worker_nodes" prefix for clarity
 	}
 
-	klog.V(4).Infof("Distribution %s: Total Power=%.2f, Total	 Cost=%.2f, Resource Efficiency=%.3f, Load Balance StdDev=%.3f, WeightedLatency=%.2f",
+	klog.V(4).Infof("\033[32mDistribution %s: Total Power=%.2f, Total Cost=%.2f, Resource Efficiency=%.3f, Load Balance StdDev=%.3f, WeightedLatency=%.2f\033[0m",
 		dist.ID, totalPower, totalCost, dist.Metrics["resource_efficiency"], dist.Metrics["load_balance_std_dev"], weightedLatency)
 	return true // Feasible distribution
 }
@@ -229,6 +229,6 @@ func calculateWeightedLatency(dist *Distribution, clusterMetrics map[string]Clus
 
 	// Return weighted average latency
 	avgLatency := totalLatencyWeight / float64(totalReplicas)
-	// klog.V(5).Infof("Weighted average latency for distribution %s: %.2f", dist.ID, avgLatency)
+	klog.V(5).Infof("Weighted average latency for distribution %s: %.3f", dist.ID, avgLatency)
 	return avgLatency
 }

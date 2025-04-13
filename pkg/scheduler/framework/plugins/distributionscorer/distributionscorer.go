@@ -9,7 +9,6 @@ import (
 	workv1alpha2 "github.com/karmada-io/karmada/pkg/apis/work/v1alpha2"
 	"github.com/karmada-io/karmada/pkg/scheduler/framework"
 	"k8s.io/klog/v2"
-
 	// "github.com/prometheus/client_golang/prometheus"
 	// "github.com/prometheus/client_golang/prometheus/promhttp"
 )

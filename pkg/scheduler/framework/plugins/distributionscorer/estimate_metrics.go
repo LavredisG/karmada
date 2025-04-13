@@ -20,8 +20,14 @@ func estimateDistributionMetrics(dist *Distribution, clusterMetrics map[string]C
 	// then we would need 4 nodes (3+3+3+3) / 4 = 3.0. But a replica can't be split,
 	// so we need 4 nodes. The fragmentation factor accounts for this.
 	fragmentationFactor := 1.2
+	totalReplicas := 0
+	totalMaxNodes := 0.0
 
 	for clusterName, replicaCount := range dist.Allocation {
+
+		totalReplicas += replicaCount
+		totalMaxNodes += float64(clusterMetrics[clusterName].Metrics["max_worker_nodes"])
+
 		if metrics, exists := clusterMetrics[clusterName]; exists {
 			// Always add control plane's fixed power/cost (even if no replicas are assigned)
 			controlPlanePower := metrics.Metrics["master_power"]
@@ -90,7 +96,7 @@ func estimateDistributionMetrics(dist *Distribution, clusterMetrics map[string]C
 	dist.Metrics["resource_efficiency"] = math.Floor(resourceEfficiency*1000) / 1000 // Round to 3 decimal places
 
 	// Calculate load balance metric (standard deviation)
-	loadBalanceStdDev := calculateLoadBalanceStdDev(dist, clusterMetrics, nodesByCluster)
+	loadBalanceStdDev := calculateLoadBalanceStdDev(dist, clusterMetrics, totalReplicas, totalMaxNodes)
 	dist.Metrics["load_balance_std_dev"] = math.Floor(loadBalanceStdDev*1000) / 1000 // Round to 3 decimal places
 
 	weightedLatency := calculateWeightedLatency(dist, clusterMetrics)
@@ -153,26 +159,39 @@ func calculateResourceEfficiency(dist *Distribution, clusterMetrics map[string]C
 
 // calculateLoadBalanceStdDev calculates the load balance standard deviation for a distribution
 func calculateLoadBalanceStdDev(dist *Distribution, clusterMetrics map[string]ClusterMetrics,
-	nodesByCluster map[string]float64) float64 {
+	totalReplicas int, totalMaxNodes float64) float64 {
+
+	// If no replicas, return 0 (perfect balance), not expected as a case
+	if totalReplicas == 0 {
+		klog.V(5).Infof("No replicas in distribution %s, returning 0 for load balance std dev", dist.ID)
+		return 0.0
+	}
 
 	loadRatios := make([]float64, 0, len(clusterMetrics))
 
 	// Calculate load ratios for ALL clusters in the metrics
 	for clusterName, metrics := range clusterMetrics {
+		// Cluster capacity as a percentage of total capacity
 		maxNodes := metrics.Metrics["max_worker_nodes"]
-		nodesRequired, exists := nodesByCluster[clusterName]
-		if !exists {
-			nodesRequired = 0 // No nodes required for this cluster
-		}
+		capacityPercentage := maxNodes / totalMaxNodes
 
-		// Calculate load ratio
-		loadRatio := nodesRequired / maxNodes
+		replicaCount := dist.Allocation[clusterName]
+		replicaPercentage := float64(replicaCount) / float64(totalReplicas)
+
+		// Calculate normalized load ratio
+		// A perfectly balanced distribution would have replicaPercentage == capacityPercentage
+		// Deviation from this indicates imbalance
+		loadRatio := replicaPercentage / capacityPercentage
+
+		// Calculate load ratio - this is the portion of a cluster's capacity being used
 		loadRatios = append(loadRatios, loadRatio)
-
-		klog.V(5).Infof("Cluster %s load ratio: %.3f (nodes: %.1f/%.1f)",
-			clusterName, loadRatio, nodesRequired, maxNodes)
+		klog.V(5).Infof("Cluster %s load ratio: %.3f (replicas: %d/%d = %.2f%%, capacity: %.1f/%.1f = %.2f%%)",
+			clusterName, loadRatio, replicaCount, totalReplicas,
+			replicaPercentage*100, maxNodes, totalMaxNodes, capacityPercentage*100)
 	}
 
+	// The length of loadRatios equals the number of clusters you have (e.g., 3)
+	// Each value is a ratio of how loaded that cluster is (nodesRequired/maxNodes)
 	stdDev := calculateStandardDeviation(loadRatios)
 	klog.V(5).Infof("Load balance std dev for distribution %s: %.3f", dist.ID, stdDev)
 	return stdDev

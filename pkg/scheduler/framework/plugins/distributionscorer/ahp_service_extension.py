@@ -12,14 +12,32 @@ def numeric_rsrv(values, higher_is_better):
         return np.array([])
     # Build a pairwise comparison matrix.
     matrix = np.ones((n, n), dtype=float)
+    
+    # Define a large number to represent "much better" when comparing against zero
+    # for criteria where lower is better
+    LARGE_VALUE = 1000000.0
+    
     for i in range(n):
         for j in range(n):
-            # Avoid division by zero
-            if values[j] == 0 or values[i] == 0:
-                matrix[i, j] = 1.0
-            else:
-                if higher_is_better:
+            # Special handling for zero values
+            if higher_is_better:
+                if values[i] == 0 and values[j] > 0:
+                    # When higher is better, zero is worst case
+                    matrix[i, j] = 1.0 / LARGE_VALUE
+                elif values[j] == 0 and values[i] > 0:
+                    matrix[i, j] = LARGE_VALUE
+                elif values[i] == 0 and values[j] == 0:
+                    matrix[i, j] = 1.0  # Equal
+                else:
                     matrix[i, j] = values[i] / values[j]
+            else:
+                # When lower is better, zero is the best case
+                if values[i] == 0 and values[j] > 0:
+                    matrix[i, j] = LARGE_VALUE
+                elif values[j] == 0 and values[i] > 0:
+                    matrix[i, j] = 1.0 / LARGE_VALUE
+                elif values[i] == 0 and values[j] == 0:
+                    matrix[i, j] = 1.0  # Equal
                 else:
                     matrix[i, j] = values[j] / values[i]
     
@@ -34,32 +52,6 @@ def numeric_rsrv(values, higher_is_better):
     weights /= np.sum(weights)
 
     return weights
-
-# def consistency_ratio(matrix):
-#     """Computes the consistency ratio (CR) to check AHP consistency."""
-#     n = len(matrix)
-#     if n < 2:
-#         return 0  # No consistency check needed for trivial cases
-
-#     # Compute the priority vector
-#     col_sums = np.sum(matrix, axis=0)
-#     norm_matrix = matrix / col_sums
-#     priority_vector = np.mean(norm_matrix, axis=1)
-
-#     # Compute lambda_max (eigenvalue approximation)
-#     lambda_max = np.sum(np.dot(matrix, priority_vector) / priority_vector) / n
-
-#     # Compute Consistency Index (CI)
-#     CI = (lambda_max - n) / (n - 1)
-
-#     # Random Index (RI) values for matrices of size 1-10
-#     RI_dict = {1: 0.00, 2: 0.00, 3: 0.58, 4: 0.90, 5: 1.12, 6: 1.24, 
-#                7: 1.32, 8: 1.41, 9: 1.45, 10: 1.49}
-#     RI = RI_dict.get(n, 1.49)  # Default to 1.49 for n > 10
-
-#     # Compute Consistency Ratio (CR)
-#     CR = CI / RI if RI > 0 else 0
-#     return CR   
 
 
 

@@ -77,11 +77,11 @@ def score_distributions():
             metrics = dist.get("metrics", {})
             crit_values.append(metrics.get(crit, 0.0))
         
-        app.logger.info(f"Criterion '{crit}': values = {crit_values}, higher_is_better = {higher_is_better}, weight = {weight}")
+        app.logger.info(f"\033[32mCriterion '{crit}': values = {crit_values}, higher_is_better = {higher_is_better}, weight = {weight}\033[0m")
         
         # Compute relative scores for this criterion
         crit_scores = numeric_rsrv(crit_values, higher_is_better)
-        app.logger.info(f"Criterion '{crit}': computed priority vector = {crit_scores}")
+        app.logger.info(f"\033[32mCriterion '{crit}': computed priority vector = {crit_scores}\033[0m")
         
         # Update the weighted scores
         weighted_scores += weight * crit_scores
@@ -104,7 +104,7 @@ def score_distributions():
             "score": int(norm_scores[i])
         })
     
-    app.logger.info(f"Final distribution response: {response}")
+    app.logger.info(f"\033[32mFinal distribution response: {response}\033[0m")
     return jsonify(response)
 
 

@@ -144,7 +144,7 @@ def update_score():
             cluster_scores.clear()
             last_score_time = current_time  # Now correctly updates global variable
         cluster_scores[cluster] = score
-        app.logger.info(f"    Received score for {cluster}: {score}")
+        app.logger.info(f"\033[32m    Received score for {cluster}: {score}\033[0m")
 
         # Only update policy when we have scores for all clusters
         expected_clusters = {'edge', 'fog', 'cloud'}

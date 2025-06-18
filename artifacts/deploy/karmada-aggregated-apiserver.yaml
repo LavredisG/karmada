@@ -22,7 +22,7 @@ spec:
       automountServiceAccountToken: false
       containers:
         - name: karmada-aggregated-apiserver
-          image: docker.io/karmada/karmada-aggregated-apiserver:latest
+          image: docker.io/karmada/karmada-aggregated-apiserver:v1.12.0
           imagePullPolicy: IfNotPresent
           command:
             - /bin/karmada-aggregated-apiserver

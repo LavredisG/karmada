@@ -115,30 +115,25 @@ func (r *DistributionScorer) NormalizeScore(ctx context.Context, scores framewor
 	klog.Infof("Starting NormalizeScore for %d clusters",
 		len(scores))
 
-	clusterNameList := make([]string, len(scores))
-	for i, score := range scores {
-		clusterNameList[i] = score.Cluster.Name
-	}
-	klog.Infof("\033[32mProcessing clusters in order: %v\033[0m", clusterNameList)
+	clusterNames := make([]string, len(scores))
+	clusterMetricsMap := make(map[string]ClusterMetrics)
 
+	for i, score := range scores {
+		clusterName := score.Cluster.Name
+		clusterNames[i] = clusterName
+
+		if value, ok := r.metricsStore.Load(clusterName); ok {
+			clusterMetricsMap[clusterName] = value.(ClusterMetrics)
+		}
+	}
+
+	klog.Infof("\033[32mProcessing clusters in order: %v\033[0m", clusterNames)
+	
 	totalReplicas := int(r.totalReplicas)
 
 	if totalReplicas <= 0 {
 		klog.Warning("No replica count found in spec, skipping normalization")
 		return framework.NewResult(framework.Success)
-	}
-
-	// Get cluster names and build cluster metrics map
-	clusterNames := make([]string, 0, len(scores))
-	clusterMetricsMap := make(map[string]ClusterMetrics)
-
-	for _, score := range scores {
-		clusterName := score.Cluster.Name
-		clusterNames = append(clusterNames, clusterName)
-
-		if value, ok := r.metricsStore.Load(clusterName); ok {
-			clusterMetricsMap[clusterName] = value.(ClusterMetrics)
-		}
 	}
 
 	pluralSuffix := "s"
@@ -156,7 +151,7 @@ func (r *DistributionScorer) NormalizeScore(ctx context.Context, scores framewor
 	// Estimate metrics for each distribution
 	feasibleDistributions := []Distribution{}
 	for i := range distributions {
-		if estimateDistributionMetrics(&distributions[i], clusterMetricsMap, r.cpuPerReplica, r.memoryPerReplica) {
+		if EstimateDistributionMetrics(&distributions[i], clusterMetricsMap, r.cpuPerReplica, r.memoryPerReplica) {
 			feasibleDistributions = append(feasibleDistributions, distributions[i])
 		}
 	}
@@ -170,11 +165,11 @@ func (r *DistributionScorer) NormalizeScore(ctx context.Context, scores framewor
 	request := DistributionAHPRequest{
 		Distributions: feasibleDistributions,
 		Criteria: map[string]CriteriaConfig{
-			"power":                {HigherIsBetter: false, Weight: 0.25},
-			"cost":                 {HigherIsBetter: false, Weight: 0.25},
-			"resource_efficiency":  {HigherIsBetter: true, Weight: 0.15},
-			"load_balance_std_dev": {HigherIsBetter: false, Weight: 0.15},
-			"weighted_latency":     {HigherIsBetter: false, Weight: 0.20},
+			"power":                {HigherIsBetter: false, Weight: 0.05},
+			"cost":                 {HigherIsBetter: false, Weight: 0.05},
+			"resource_efficiency":  {HigherIsBetter: true, Weight: 0.05},
+			"load_balance_std_dev": {HigherIsBetter: false, Weight: 0.05},
+			"weighted_latency":     {HigherIsBetter: false, Weight: 0.80},
 		},
 	}
 
@@ -198,18 +193,12 @@ func (r *DistributionScorer) NormalizeScore(ctx context.Context, scores framewor
 	// For Allocations where a cluster would get weight of 0 (no replicas)
 	// we instead assign it a weight of 1, but multiply the rest by a big constant
 	hasZeroAllocations := false
-	maxReplicas := 0
-
 	for _, replicaCount := range bestDist.Allocation {
 		if replicaCount == 0 {
 			hasZeroAllocations = true
 		}
-		if replicaCount > maxReplicas {
-			maxReplicas = replicaCount
-		}
 	}
-
-	// Update cluster scores based on replica allocation in best distribution
+	// Update cluster scores based on best distribution's replica allocation
 	for i := range scores {
 		clusterName := scores[i].Cluster.Name
 		replicaCount := bestDist.Allocation[clusterName]
@@ -217,21 +206,15 @@ func (r *DistributionScorer) NormalizeScore(ctx context.Context, scores framewor
 		if hasZeroAllocations {
 			if replicaCount > 0 {
 				const multiplier = 1000
-				// scores[i].Score = int64(maxReplicas * multiplier)
 				bestDist.Allocation[clusterName] = replicaCount * multiplier
 			} else {
-				// scores[i].Score = 1
 				bestDist.Allocation[clusterName] = 1
 			}
 		} else {
-			// scores[i].Score = int64(replicaCount)
 			bestDist.Allocation[clusterName] = replicaCount
 		}
 
-		// klog.Infof("DistributionScorer: Set score for cluster %s to %d based on %d replicas",
-		// 	clusterName, scores[i].Score, replicaCount)
-
-		klog.Infof("DistributionScorer: Set allocation for cluster %s to %d based on %d replicas",
+		klog.Infof("DistributionScorer: Set weight for cluster %s to %d based on %d replicas",
 			clusterName, bestDist.Allocation[clusterName], replicaCount)
 	}
 

@@ -19,8 +19,6 @@ func CollectMetrics(cluster *clusterv1alpha1.Cluster) ClusterMetrics {
 	// memUsed := float64(cluster.Status.ResourceSummary.Allocated.Memory().Value())
 	// metrics["memory"] = (memTotal - memUsed) / memTotal
 
-	// Get power from cluster labels. If missing, default to 100.
-
 	if cpu, exists := cluster.Labels["worker_cpu_capacity"]; exists {
 		if cpuf, err := strconv.ParseFloat(cpu, 64); err == nil {
 			metrics["worker_cpu_capacity"] = cpuf
@@ -33,15 +31,15 @@ func CollectMetrics(cluster *clusterv1alpha1.Cluster) ClusterMetrics {
 		}
 	}
 
-	if power, exists := cluster.Labels["master_power"]; exists {
+	if power, exists := cluster.Labels["control_plane_power"]; exists {
 		if powerf, err := strconv.ParseFloat(power, 64); err == nil {
-			metrics["master_power"] = powerf
+			metrics["control_plane_power"] = powerf
 		}
 	}
 
-	if cost, exists := cluster.Labels["master_cost"]; exists {
+	if cost, exists := cluster.Labels["control_plane_cost"]; exists {
 		if costf, err := strconv.ParseFloat(cost, 64); err == nil {
-			metrics["master_cost"] = costf
+			metrics["control_plane_cost"] = costf
 		}
 	}
 
@@ -57,7 +55,6 @@ func CollectMetrics(cluster *clusterv1alpha1.Cluster) ClusterMetrics {
 		}
 	}
 
-	// maxNodes := 10000.0
 	if maxNodes, exists := cluster.Labels["max_worker_nodes"]; exists {
 		if maxNodesf, err := strconv.ParseFloat(maxNodes, 64); err == nil {
 			metrics["max_worker_nodes"] = maxNodesf

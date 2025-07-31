@@ -7,7 +7,7 @@ import (
 )
 
 // estimateDistributionMetrics calculates metrics for comparing distributions
-func estimateDistributionMetrics(dist *Distribution, clusterMetrics map[string]ClusterMetrics,
+func EstimateDistributionMetrics(dist *Distribution, clusterMetrics map[string]ClusterMetrics,
 	cpuPerReplica, memoryPerReplica int64) bool {
 
 	klog.V(4).Infof("Estimating metrics for distribution %s", dist.ID)
@@ -17,7 +17,7 @@ func estimateDistributionMetrics(dist *Distribution, clusterMetrics map[string]C
 
 	// Fragmentation factor (20% overhead for worker nodes)
 	// Example: node of capacity 4 CPU, if each replica needs 3 CPU and we have 4 replicas
-	// then we would need 4 nodes (3+3+3+3) / 4 = 3.0. But a replica can't be split,
+	// then we would need 3 nodes (3+3+3+3) / 4 = 3.0. But a replica can't be split,
 	// so we need 4 nodes. The fragmentation factor accounts for this.
 	fragmentationFactor := 1.2
 	totalReplicas := 0
@@ -30,8 +30,8 @@ func estimateDistributionMetrics(dist *Distribution, clusterMetrics map[string]C
 
 		if metrics, exists := clusterMetrics[clusterName]; exists {
 			// Always add control plane's fixed power/cost (even if no replicas are assigned)
-			controlPlanePower := metrics.Metrics["master_power"]
-			controlPlaneCost := metrics.Metrics["master_cost"]
+			controlPlanePower := metrics.Metrics["control_plane_power"]
+			controlPlaneCost := metrics.Metrics["control_plane_cost"]
 			totalPower += controlPlanePower
 			totalCost += controlPlaneCost
 
@@ -137,15 +137,16 @@ func calculateResourceEfficiency(dist *Distribution, clusterMetrics map[string]C
 		packingEff := (cpuUtil + memUtil) / 2
 
 		// Spare capacity (how much room we leave for future allocations)
-		spareCapacity := 1.0 - (nodesRequired / maxWorkerNodes)
+		// spareCapacity := 1.0 - (nodesRequired / maxWorkerNodes)
 
 		// Combined efficiency: balance packing and spare capacity
-		clusterEff := packingEff * (0.5 + 0.5*spareCapacity)
+		// clusterEff := packingEff * (0.5 + 0.5*spareCapacity)
+		clusterEff := packingEff 
 		resourceEfficiency += clusterEff
 		clusterCount++
 
-		klog.V(4).Infof("Cluster %s: packing_eff=%.2f, spare_capacity=%.2f, combined_eff=%.2f",
-			clusterName, packingEff, spareCapacity, clusterEff)
+		klog.V(4).Infof("Cluster %s: packing_eff=%.2f, combined_eff=%.2f",
+			clusterName, packingEff, clusterEff)
 		klog.V(4).Infof("Cluster %s: CPU Utilization=%.2f, Memory Utilization=%.2f",
 			clusterName, cpuUtil, memUtil)
 		klog.V(4).Infof("Cluster %s: Nodes Required=%.2f, Max Worker Nodes=%.2f",

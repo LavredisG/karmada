@@ -1,36 +1,50 @@
 # Distribution Scorer Plugin for Karmada Scheduler
 
 ## Introduction
-The DistributionScorer plugin is a custom scoring plugin for the Karmada scheduler. It is designed to optimize the distribution of workloads across clusters by evaluating various metrics such as power consumption, cost, resource efficiency, load balance, and latency. The plugin ensures that workloads are distributed in a way that meets user-defined criteria while maximizing efficiency and minimizing costs.
+
+The DistributionScorer plugin is an advanced scoring plugin for the Karmada scheduler that optimizes workload distribution across clusters. It evaluates multiple dimensions including power consumption, cost, resource efficiency, load balance, and latency to find the optimal distribution of workload replicas.
+
+This plugin uses the Analytic Hierarchy Process (AHP) to make multi-criteria decisions, ensuring a balanced consideration of all relevant factors when deciding where to place workloads.
 
 ## Features
-- **Custom Scoring**: Evaluates clusters based on multiple criteria, including power, cost, resource efficiency, load balance, and latency.
-- **Prometheus Metrics Integration**: Exposes detailed metrics for monitoring and visualization in Grafana.
-- **Dynamic Distribution**: Generates and evaluates all possible workload distributions to find the optimal allocation.
-- **Feasibility Checks**: Ensures that clusters meet the resource requirements for workloads before scoring.
+
+- **Multi-Criteria Decision Making**: Uses AHP to evaluate distributions based on multiple weighted criteria.
+- **Dynamic Weight Adjustment**: Automatically adjusts criteria weights based on workload characteristics.
+- **Comprehensive Metrics Collection**: Collects and analyzes metrics such as CPU capacity, memory capacity, power, and cost.
+- **Distribution Generation**: Creates and evaluates all possible workload distributions across clusters.
+- **Feasibility Checks**: Validates resource requirements to ensure practical distributions.
+- **Prometheus Integration**: Exposes detailed metrics for monitoring and visualization.
+- **Robust Error Handling**: Implements retry logic and comprehensive error reporting.
 
 ## Architecture
-The plugin is integrated into the Karmada scheduler and operates during the scoring phase. It consists of the following components:
 
-1. **Metrics Collection**:
-   - Collects metrics such as CPU capacity, memory capacity, power, and cost from each cluster.
-   - Validates that clusters can meet the resource requirements of workloads.
+The plugin architecture consists of several components:
 
-2. **Distribution Generation**:
-   - Generates all possible workload distributions across clusters.
-   - Evaluates the feasibility of each distribution based on resource constraints.
+1. **Metrics Collection**
+   - Collects metrics from each cluster including CPU, memory, power, cost, and latency.
+   - These metrics form the basis for evaluating different distribution options.
 
-3. **Scoring and Normalization**:
-   - Scores each feasible distribution using user-defined criteria.
-   - Normalizes scores to ensure fair comparison across clusters.
+2. **Distribution Generation**
+   - Generates all possible ways to distribute workload replicas across available clusters.
+   - Eliminates distributions that don't meet resource requirements.
 
-4. **Prometheus Metrics**:
-   - Exposes metrics such as final distribution allocation, CPU usage, and cost metrics via an HTTP endpoint.
-   - Metrics are updated dynamically during the scoring process.
+3. **Dynamic Weight Determination**
+   - Analyzes workload characteristics to determine appropriate weights for each criterion.
+   - Supports customization through annotations.
+
+4. **AHP-Based Scoring**
+   - Uses AHP to compare distributions across multiple criteria.
+   - Normalizes scores for fair comparison.
+
+5. **Distribution Selection**
+   - Selects the highest-scoring distribution as the optimal solution.
+   - Ensures proper handling of zero-allocation cases.
 
 ## Usage
-### Enabling the Plugin
-To enable the Distribution Scorer plugin, include it in the Karmada scheduler configuration:
+
+### Configuration
+
+To enable the DistributionScorer plugin in Karmada, add it to your scheduler configuration:
 
 ```yaml
 apiVersion: kubescheduler.config.k8s.io/v1
@@ -40,33 +54,19 @@ plugins:
   score:
     enabled:
     - name: DistributionScorer
-...
 ```
 
-### Configuration
-The plugin uses default criteria weights for scoring. These can be customized in the plugin's configuration:
+### Dynamic Weight Control
 
-- **Power**: Weight = 0.25
-- **Cost**: Weight = 0.25
-- **Resource Efficiency**: Weight = 0.15
-- **Load Balance**: Weight = 0.15
-- **Latency**: Weight = 0.20
+You can control criterion weights through the following annotations on your workload:
 
-## Prometheus Metrics
-The plugin exposes the following metrics via Prometheus:
+- `karmada.io/distribution-power-weight`: Weight for power efficiency (default: 0.25)
+- `karmada.io/distribution-cost-weight`: Weight for cost optimization (default: 0.25)
+- `karmada.io/distribution-efficiency-weight`: Weight for resource efficiency (default: 0.15)
+- `karmada.io/distribution-balance-weight`: Weight for load balancing (default: 0.15)
+- `karmada.io/distribution-latency-weight`: Weight for latency optimization (default: 0.20)
 
-1. **Final Distribution Allocation**:
-   - Metric: `final_distribution_allocation`
-   - Labels: `cluster`
-   - Description: Tracks the number of replicas allocated to each cluster.
-
-2. **CPU Usage per Cluster**:
-   - Metric: `cpu_usage_per_cluster`
-   - Labels: `cluster`
-   - Description: Monitors the CPU usage in millicores for each cluster.
-
-3. **Cost Metrics per Cluster**:
-   - Metric: `cost_metrics_per_cluster`
+Example:
    - Labels: `cluster`
    - Description: Tracks the cost metrics for each cluster.
 

@@ -9,16 +9,6 @@ import (
 func CollectMetrics(cluster *clusterv1alpha1.Cluster) ClusterMetrics {
 	metrics := make(map[string]float64)
 
-	// Calculate CPU availability ratio.
-	// cpuTotal := float64(cluster.Status.ResourceSummary.Allocatable.Cpu().MilliValue())
-	// cpuUsed := float64(cluster.Status.ResourceSummary.Allocated.Cpu().MilliValue())
-	// metrics["cpu"] = (cpuTotal - cpuUsed) / cpuTotal
-
-	// Calculate memory availability ratio.
-	// memTotal := float64(cluster.Status.ResourceSummary.Allocatable.Memory().Value())
-	// memUsed := float64(cluster.Status.ResourceSummary.Allocated.Memory().Value())
-	// metrics["memory"] = (memTotal - memUsed) / memTotal
-
 	if cpu, exists := cluster.Labels["worker_cpu_capacity"]; exists {
 		if cpuf, err := strconv.ParseFloat(cpu, 64); err == nil {
 			metrics["worker_cpu_capacity"] = cpuf

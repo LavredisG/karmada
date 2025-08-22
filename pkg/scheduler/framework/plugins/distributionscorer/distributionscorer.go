@@ -51,6 +51,9 @@ import (
 
 const (
 	Name = "DistributionScorer"
+
+	// Possible scenarios: power-first, cost-first, latency-first, efficiency-first, balanced
+	selectedProfile = "power-first"
 )
 
 var _ framework.ScorePlugin = &DistributionScorer{}
@@ -90,12 +93,12 @@ func (r *DistributionScorer) Score(ctx context.Context, spec *workv1alpha2.Resou
 		}
 	}
 
-	klog.Infof("Workload requires %d replicas, CPU: %d millicores, Memory: %d bytes per replica",
+	klog.Infof("\033[32mWorkload requires %d replicas, CPU: %d millicores, Memory: %d bytes per replica\033[0m",
 		r.totalReplicas, r.cpuPerReplica, r.memoryPerReplica)
 
 	// Collect metrics for this cluster
 	metrics := CollectMetrics(cluster)
-	klog.Infof("DistributionScorer: Collected metrics for cluster %s: %v", cluster.Name, metrics.Metrics)
+	klog.Infof("\033[32mDistributionScorer: Collected metrics for cluster %s: %v\033[0m", cluster.Name, metrics.Metrics)
 
 	// Store metrics for later use in normalization phase
 	r.metricsStore.Store(cluster.Name, metrics)
@@ -164,13 +167,7 @@ func (r *DistributionScorer) NormalizeScore(ctx context.Context, scores framewor
 	// Prepare AHP request
 	request := DistributionAHPRequest{
 		Distributions: feasibleDistributions,
-		Criteria: map[string]CriteriaConfig{
-			"power":                {HigherIsBetter: false, Weight: 0.05},
-			"cost":                 {HigherIsBetter: false, Weight: 0.05},
-			"resource_efficiency":  {HigherIsBetter: true, Weight: 0.05},
-			"load_balance_std_dev": {HigherIsBetter: false, Weight: 0.05},
-			"weighted_latency":     {HigherIsBetter: false, Weight: 0.80},
-		},
+		Criteria: getCriteriaForProfile(selectedProfile),
 	}
 
 	// Evaluate distributions
@@ -233,4 +230,56 @@ func (r *DistributionScorer) NormalizeScore(ctx context.Context, scores framewor
 	go UpdateClusterScores(bestDist)
 
 	return framework.NewResult(framework.Success)
+}
+
+func getCriteriaForProfile(profile string) map[string]CriteriaConfig {
+	// This function should return the criteria configuration based on the selected profile
+	switch profile {
+	// prioritizes low-power placements but keep latency and efficiency considerations	
+	case "power-first":
+		return map[string]CriteriaConfig{
+			"power":                {HigherIsBetter: false, Weight: 0.50},
+			"cost":                 {HigherIsBetter: false, Weight: 0.10},
+			"resource_efficiency":  {HigherIsBetter: true, Weight: 0.10},
+			"load_balance_std_dev": {HigherIsBetter: false, Weight: 0.05},
+			"weighted_latency":     {HigherIsBetter: false, Weight: 0.25},
+		}
+	// minimizes monetary cost while not ignoring latency/efficiency
+	case "cost-first":
+		return map[string]CriteriaConfig{
+			"power":                {HigherIsBetter: false, Weight: 0.10},
+			"cost":                 {HigherIsBetter: false, Weight: 0.50},
+			"resource_efficiency":  {HigherIsBetter: true, Weight: 0.10},
+			"load_balance_std_dev": {HigherIsBetter: false, Weight: 0.05},
+			"weighted_latency":     {HigherIsBetter: false, Weight: 0.25},
+			}
+	// prioritizes low-latency clusters for real-time workloads
+	case "latency-first":
+		return map[string]CriteriaConfig{
+			"power":                {HigherIsBetter: false, Weight: 0.10},
+			"cost":                 {HigherIsBetter: false, Weight: 0.10},
+			"resource_efficiency":  {HigherIsBetter: true, Weight: 0.10},
+			"load_balance_std_dev": {HigherIsBetter: false, Weight: 0.10},
+			"weighted_latency":     {HigherIsBetter: false, Weight: 0.60},
+		}
+	// pack resources efficiently and balance load to reduce wasted capacity		
+	case "efficiency-first":
+		return map[string]CriteriaConfig{
+			"power":                {HigherIsBetter: false, Weight: 0.10},
+			"cost":                 {HigherIsBetter: false, Weight: 0.10},
+			"resource_efficiency":  {HigherIsBetter: true, Weight: 0.50},
+			"load_balance_std_dev": {HigherIsBetter: false, Weight: 0.20},
+			"weighted_latency":     {HigherIsBetter: false, Weight: 0.10},
+		}
+	case "balanced":
+		fallthrough
+	default:
+		return map[string]CriteriaConfig{
+			"power":                {HigherIsBetter: false, Weight: 0.20},
+			"cost":                 {HigherIsBetter: false, Weight: 0.20},
+			"resource_efficiency":  {HigherIsBetter: true, Weight: 0.20},
+			"load_balance_std_dev": {HigherIsBetter: false, Weight: 0.20},
+			"weighted_latency":     {HigherIsBetter: false, Weight: 0.20},
+		}
+	}
 }

@@ -5,55 +5,46 @@ import logging
 app = Flask(__name__)
 app.logger.setLevel(logging.INFO)
 
+
+epsilon = 1e-9
+
 def numeric_rsrv(values, higher_is_better):
     """Computes relative weights for a list of numeric values using pairwise comparisons."""
     n = len(values)
     if n == 0:
         return np.array([])
-    # Build a pairwise comparison matrix.
-    matrix = np.ones((n, n), dtype=float)
-    
-    # Define a large number to represent "much better" when comparing against zero
-    # for criteria where lower is better
-    LARGE_VALUE = 1000000.0
-    
-    for i in range(n):
-        for j in range(n):
-            # Special handling for zero values
-            if higher_is_better:
-                if values[i] == 0 and values[j] > 0:
-                    # When higher is better, zero is worst case
-                    matrix[i, j] = 1.0 / LARGE_VALUE
-                elif values[j] == 0 and values[i] > 0:
-                    matrix[i, j] = LARGE_VALUE
-                elif values[i] == 0 and values[j] == 0:
-                    matrix[i, j] = 1.0  # Equal
-                else:
-                    matrix[i, j] = values[i] / values[j]
-            else:
-                # When lower is better, zero is the best case
-                if values[i] == 0 and values[j] > 0:
-                    matrix[i, j] = LARGE_VALUE
-                elif values[j] == 0 and values[i] > 0:
-                    matrix[i, j] = 1.0 / LARGE_VALUE
-                elif values[i] == 0 and values[j] == 0:
-                    matrix[i, j] = 1.0  # Equal
-                else:
-                    matrix[i, j] = values[j] / values[i]
+
+    # Add epsilon to all values to avoid division by zero
+    v = np.array(values, dtype=float) + epsilon
+
+    # Handle the degenerate case where all values are effectively equal
+    if np.allclose(v, v[0], rtol=0.0, atol=1e-12):
+        return np.ones(n, dtype=float) / n  # Uniform weights
+
+    # Build the pairwise comparison matrix
+    if higher_is_better:
+        # Higher values are better: matrix[i, j] = v[i] / v[j]
+        matrix = v[:, None] / v[None, :]
+    else:
+        # Lower values are better: matrix[i, j] = v[j] / v[i]
+        matrix = v[None, :] / v[:, None]
     
     # Step 1: Normalize each column
     col_sums = np.sum(matrix, axis = 0)
+    col_sums[col_sums == 0.0] = 1.0  # Avoid division by zero
     norm_matrix = matrix / col_sums
 
     # Step 2: Compute priority vector (row mean)
     weights = np.mean(norm_matrix, axis = 1)
 
     # Step 3: Normalize weights to sum to 1
-    weights /= np.sum(weights)
+    total = np.sum(weights)
+    if total > 0:
+        weights /= total
+    else:
+        weights = np.ones(n, dtype=float) / n  # Fallback to uniform weights if total is zero
 
     return weights
-
-
 
 @app.route('/distribution_score', methods=['POST'])
 def score_distributions():

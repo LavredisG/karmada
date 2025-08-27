@@ -5,6 +5,7 @@ import time
 import logging
 import os
 import signal
+import threading  # Add this import
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -24,7 +25,12 @@ POLICY_GROUP = "policy.karmada.io"
 POLICY_VERSION = "v1alpha1"
 POLICY_PLURAL = "propagationpolicies"
 NAMESPACE = "default"
-POLICY_NAME = "nginx-propagation"
+POLICY_NAME = "custom-latency-pp"
+
+# Add cluster configuration
+CLUSTER_GROUP = "cluster.karmada.io"
+CLUSTER_VERSION = "v1alpha1"
+CLUSTER_PLURAL = "clusters"
 
 # Configure Kubernetes client
 try:
@@ -45,18 +51,38 @@ try:
     )
     custom_api = client.CustomObjectsApi()
     
-    # Verify connection
-    policy = custom_api.get_namespaced_custom_object(
-        group=POLICY_GROUP,
-        version=POLICY_VERSION,
-        namespace=NAMESPACE,
-        plural=POLICY_PLURAL,
-        name=POLICY_NAME
-    )
-    logger.info(f"    Successfully connected to Karmada API using context: {KARMADA_CONTEXT}")
+    # Verify connection with retry logic
+    max_retries = 10
+    retry_delay = 5  # seconds
+    policy = None
+
+    for attempt in range(max_retries):
+        try:
+            policy = custom_api.get_namespaced_custom_object(
+                group=POLICY_GROUP,
+                version=POLICY_VERSION,
+                namespace=NAMESPACE,
+                plural=POLICY_PLURAL,
+                name=POLICY_NAME
+            )
+            logger.info(f"    Successfully connected to Karmada API using context: {KARMADA_CONTEXT}")
+            break
+        except client.exceptions.ApiException as e:
+            if e.status == 404:  # Not found
+                logger.info(f"    Policy not found yet (attempt {attempt + 1}/{max_retries}), retrying in {retry_delay}s...")
+                time.sleep(retry_delay)
+            else:
+                logger.error(f"    API error: {e}")
+                raise
+        except Exception as e:
+            logger.error(f"    Unexpected error: {e}")
+            raise
+    
+    if policy is None:
+        raise RuntimeError(f"    Failed to retrieve policy after {max_retries} attempts")
 
 except Exception as e:
-    logger.error(f"Failed to configure Kubernetes client: {e}")
+    logger.error(f"    Failed to configure Kubernetes client: {e}")
     raise
 
 
@@ -68,6 +94,14 @@ def signal_handler(sig, frame):
 
 signal.signal(signal.SIGINT, signal_handler)
 signal.signal(signal.SIGTERM, signal_handler)
+
+
+def start_cluster_patcher():
+    """Start the cluster status patching thread"""
+    patcher_thread = threading.Thread(target=patch_cluster_status_from_labels, daemon=True)
+    patcher_thread.start()
+    logger.info("    Started cluster status patcher thread")
+
 
 def update_propagation_policy():
     """Updates the PropagationPolicy with new weights based on collected scores."""
@@ -190,5 +224,8 @@ def health_check():
             'error': str(e)
         }), 500
 
+
+
 if __name__ == '__main__':
+    # Listen on port 6001
     app.run(host='172.18.0.1', port=6001)

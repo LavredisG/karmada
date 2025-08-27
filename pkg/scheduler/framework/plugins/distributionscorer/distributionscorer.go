@@ -53,7 +53,7 @@ const (
 	Name = "DistributionScorer"
 
 	// Possible scenarios: power-first, cost-first, latency-first, efficiency-first, balanced
-	selectedProfile = "power-first"
+	selectedProfile = "balanced"
 )
 
 var _ framework.ScorePlugin = &DistributionScorer{}

@@ -5,8 +5,8 @@ import logging
 app = Flask(__name__)
 app.logger.setLevel(logging.INFO)
 
-
 epsilon = 1e-9
+RATIO_CAP = 9.0  # cap pairwise ratios (classic AHP bound)
 
 def numeric_rsrv(values, higher_is_better):
     """Computes relative weights for a list of numeric values using pairwise comparisons."""
@@ -28,6 +28,9 @@ def numeric_rsrv(values, higher_is_better):
     else:
         # Lower values are better: matrix[i, j] = v[j] / v[i]
         matrix = v[None, :] / v[:, None]
+    
+    # Bound dominance: clip pairwise ratios to [1/RATIO_CAP, RATIO_CAP]
+    matrix = np.clip(matrix, 1.0 / RATIO_CAP, RATIO_CAP)
     
     # Step 1: Normalize each column
     col_sums = np.sum(matrix, axis = 0)
@@ -95,9 +98,14 @@ def score_distributions():
             "score": int(norm_scores[i])
         })
     
-    app.logger.info(f"\033[32mFinal distribution response: {response}\033[0m")
+    # Create and log tuples sorted by increasing score
+    score_tuples = [(score["id"], score["score"]) for score in response["scores"]]
+    score_tuples_sorted = sorted(score_tuples, key=lambda x: x[1])  # Sort by score in ascending order
+    
+    app.logger.info(f"\033[32mFinal distribution response (sorted by increasing score): {score_tuples_sorted}\033[0m")
+    # app.logger.info(f"\033[32mFinal distribution response (original order): {response}\033[0m")
+    
     return jsonify(response)
-
 
 if __name__ == '__main__':
     # Listen on port 6000

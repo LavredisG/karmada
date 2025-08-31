@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: custom-balanced-scheduler
+  name: custom-efficiency-scheduler
   namespace: karmada-system
   labels:
-    app: custom-balanced-scheduler
+    app: custom-efficiency-scheduler
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: custom-balanced-scheduler
+      app: custom-efficiency-scheduler
   template:
     metadata:
       labels:
-        app: custom-balanced-scheduler
+        app: custom-efficiency-scheduler
     spec:
       automountServiceAccountToken: false
       tolerations:
@@ -21,7 +21,7 @@ spec:
           operator: Exists
       containers:
         - name: karmada-scheduler
-          image: karmada/karmada-scheduler:balanced
+          image: karmada/karmada-scheduler:efficiency
           imagePullPolicy: IfNotPresent
           livenessProbe:
             httpGet:
@@ -38,8 +38,8 @@ spec:
             - --metrics-bind-address=0.0.0.0:8080
             - --health-probe-bind-address=0.0.0.0:10351
             - --enable-scheduler-estimator=true
-            - --leader-elect-resource-name=custom-balanced-scheduler # Your custom scheduler name
-            - --scheduler-name=custom-balanced-scheduler # Your custom scheduler name
+            - --leader-elect-resource-name=custom-efficiency-scheduler # Your custom scheduler name
+            - --scheduler-name=custom-efficiency-scheduler # Your custom scheduler name
             - --v=4
           volumeMounts:
             - name: karmada-config

@@ -25,7 +25,7 @@ POLICY_GROUP = "policy.karmada.io"
 POLICY_VERSION = "v1alpha1"
 POLICY_PLURAL = "propagationpolicies"
 NAMESPACE = "default"
-POLICY_NAME = "custom-latency-pp"
+POLICY_NAME = os.getenv('POLICY_NAME', 'custom-latency-pp')
 
 # Add cluster configuration
 CLUSTER_GROUP = "cluster.karmada.io"

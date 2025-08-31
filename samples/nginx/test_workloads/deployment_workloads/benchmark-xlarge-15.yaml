@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: benchmark-xlarge-15
+  namespace: default
+  labels:
+    app: xlarge
+spec:
+  replicas: 15
+  selector:
+    matchLabels:
+      app: xlarge
+  template:
+    metadata:
+      labels:
+        app: xlarge
+    spec:
+      containers:
+      - name: app
+        image: nginx:stable
+        resources:
+          requests:
+            cpu: 2000m
+            memory: 2Gi

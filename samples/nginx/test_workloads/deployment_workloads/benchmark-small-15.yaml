@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: benchmark-small-15
+  namespace: default
+  labels:
+    app: small
+spec:
+  replicas: 15
+  selector:
+    matchLabels:
+      app: small
+  template:
+    metadata:
+      labels:
+        app: small
+    spec:
+      containers:
+      - name: app
+        image: nginx:stable
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi

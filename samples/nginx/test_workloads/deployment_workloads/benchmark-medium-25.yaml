@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: benchmark-medium-25
+  namespace: default
+  labels:
+    app: medium
+spec:
+  replicas: 25
+  selector:
+    matchLabels:
+      app: medium
+  template:
+    metadata:
+      labels:
+        app: medium
+    spec:
+      containers:
+      - name: app
+        image: nginx:stable
+        resources:
+          requests:
+            cpu: 200m
+            memory: 128Mi

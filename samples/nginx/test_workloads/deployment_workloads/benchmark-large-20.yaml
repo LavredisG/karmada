@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: benchmark-large-20
+  namespace: default
+  labels:
+    app: large
+spec:
+  replicas: 20
+  selector:
+    matchLabels:
+      app: large
+  template:
+    metadata:
+      labels:
+        app: large
+    spec:
+      containers:
+      - name: app
+        image: nginx:stable
+        resources:
+          requests:
+            cpu: 1000m
+            memory: 1Gi

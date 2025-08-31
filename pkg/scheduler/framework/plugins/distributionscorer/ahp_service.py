@@ -69,8 +69,9 @@ def score_distributions():
         crit_values = []
         for dist in distributions:
             metrics = dist.get("metrics", {})
-            crit_values.append(metrics.get(crit, 0.0))
-        
+            value = metrics.get(crit, 0.0)
+            crit_values.append(round(value, 3))
+
         app.logger.info(f"\033[32mCriterion '{crit}': values = {crit_values}, higher_is_better = {higher_is_better}, weight = {weight}\033[0m")
         
         # Compute relative scores for this criterion

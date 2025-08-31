@@ -1,0 +1,33 @@
+apiVersion: policy.karmada.io/v1alpha1
+kind: PropagationPolicy
+metadata:
+  name: pp-benchmark-small-15
+spec:
+  schedulerName: custom-power-scheduler
+  resourceSelectors:
+  - apiVersion: apps/v1
+    kind: Deployment
+    name: benchmark-small-15
+  placement:
+    clusterAffinity:
+      clusterNames:
+      - edge
+      - fog
+      - cloud
+    replicaScheduling:
+      replicaDivisionPreference: Weighted
+      replicaSchedulingType: Divided
+      weightPreference:
+        staticWeightList:
+        - targetCluster:
+            clusterNames:
+            - edge
+          weight: 1
+        - targetCluster:
+            clusterNames:
+            - fog
+          weight: 1
+        - targetCluster:
+            clusterNames:
+            - cloud
+          weight: 1

@@ -52,8 +52,8 @@ import (
 const (
 	Name = "DistributionScorer"
 
-	// Possible scenarios: power-first, cost-first, latency-first, efficiency-first, balanced
-	selectedProfile = "balanced"
+	// Possible scenarios: power, cost, latency, efficiency, balance
+	selectedProfile = "balance"
 )
 
 var _ framework.ScorePlugin = &DistributionScorer{}
@@ -131,7 +131,7 @@ func (r *DistributionScorer) NormalizeScore(ctx context.Context, scores framewor
 	}
 
 	klog.Infof("\033[32mProcessing clusters in order: %v\033[0m", clusterNames)
-	
+
 	totalReplicas := int(r.totalReplicas)
 
 	if totalReplicas <= 0 {
@@ -235,26 +235,26 @@ func (r *DistributionScorer) NormalizeScore(ctx context.Context, scores framewor
 func getCriteriaForProfile(profile string) map[string]CriteriaConfig {
 	// This function should return the criteria configuration based on the selected profile
 	switch profile {
-	// prioritizes low-power placements but keep latency and efficiency considerations	
-	case "power-first":
+	// prioritizes low-power placements but keep latency and efficiency considerations
+	case "power":
 		return map[string]CriteriaConfig{
-			"power":                {HigherIsBetter: false, Weight: 0.50},
+			"power":                {HigherIsBetter: false, Weight: 0.60},
 			"cost":                 {HigherIsBetter: false, Weight: 0.10},
 			"resource_efficiency":  {HigherIsBetter: true, Weight: 0.10},
-			"load_balance_std_dev": {HigherIsBetter: false, Weight: 0.05},
-			"weighted_latency":     {HigherIsBetter: false, Weight: 0.25},
+			"load_balance_std_dev": {HigherIsBetter: false, Weight: 0.10},
+			"weighted_latency":     {HigherIsBetter: false, Weight: 0.10},
 		}
 	// minimizes monetary cost while not ignoring latency/efficiency
-	case "cost-first":
+	case "cost":
 		return map[string]CriteriaConfig{
 			"power":                {HigherIsBetter: false, Weight: 0.10},
-			"cost":                 {HigherIsBetter: false, Weight: 0.50},
+			"cost":                 {HigherIsBetter: false, Weight: 0.60},
 			"resource_efficiency":  {HigherIsBetter: true, Weight: 0.10},
-			"load_balance_std_dev": {HigherIsBetter: false, Weight: 0.05},
-			"weighted_latency":     {HigherIsBetter: false, Weight: 0.25},
-			}
+			"load_balance_std_dev": {HigherIsBetter: false, Weight: 0.10},
+			"weighted_latency":     {HigherIsBetter: false, Weight: 0.10},
+		}
 	// prioritizes low-latency clusters for real-time workloads
-	case "latency-first":
+	case "latency":
 		return map[string]CriteriaConfig{
 			"power":                {HigherIsBetter: false, Weight: 0.10},
 			"cost":                 {HigherIsBetter: false, Weight: 0.10},
@@ -262,16 +262,16 @@ func getCriteriaForProfile(profile string) map[string]CriteriaConfig {
 			"load_balance_std_dev": {HigherIsBetter: false, Weight: 0.10},
 			"weighted_latency":     {HigherIsBetter: false, Weight: 0.60},
 		}
-	// pack resources efficiently and balance load to reduce wasted capacity		
-	case "efficiency-first":
+	// pack resources efficiently and balance load to reduce wasted capacity
+	case "efficiency":
 		return map[string]CriteriaConfig{
 			"power":                {HigherIsBetter: false, Weight: 0.10},
 			"cost":                 {HigherIsBetter: false, Weight: 0.10},
-			"resource_efficiency":  {HigherIsBetter: true, Weight: 0.50},
-			"load_balance_std_dev": {HigherIsBetter: false, Weight: 0.20},
+			"resource_efficiency":  {HigherIsBetter: true, Weight: 0.60},
+			"load_balance_std_dev": {HigherIsBetter: false, Weight: 0.10},
 			"weighted_latency":     {HigherIsBetter: false, Weight: 0.10},
 		}
-	case "balanced":
+	case "balance":
 		fallthrough
 	default:
 		return map[string]CriteriaConfig{

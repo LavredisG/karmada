@@ -6,6 +6,28 @@ import (
 	"k8s.io/klog/v2"
 )
 
+// Bin-packing: returns the minimum number of nodes needed to fit all replicas given per-replica and per-node capacity.
+func binPackNodes(replicaCount int, perReplicaCPU, perReplicaMem, nodeCPU, nodeMem float64) int {
+	nodes := 0
+	remaining := replicaCount
+	for remaining > 0 {
+		usedCPU := 0.0
+		usedMem := 0.0
+		fit := 0
+		for fit < remaining {
+			if usedCPU+perReplicaCPU > nodeCPU || usedMem+perReplicaMem > nodeMem {
+				break
+			}
+			usedCPU += perReplicaCPU
+			usedMem += perReplicaMem
+			fit++
+		}
+		nodes++
+		remaining -= fit
+	}
+	return nodes
+}
+
 // estimateDistributionMetrics calculates metrics for comparing distributions
 func EstimateDistributionMetrics(dist *Distribution, clusterMetrics map[string]ClusterMetrics,
 	cpuPerReplica, memoryPerReplica int64) bool {
@@ -19,7 +41,7 @@ func EstimateDistributionMetrics(dist *Distribution, clusterMetrics map[string]C
 	// Example: node of capacity 4 CPU, if each replica needs 3 CPU and we have 4 replicas
 	// then we would need 3 nodes (3+3+3+3) / 4 = 3.0. But a replica can't be split,
 	// so we need 4 nodes. The fragmentation factor accounts for this.
-	fragmentationFactor := 1.2
+	// fragmentationFactor := 1.2
 	totalReplicas := 0
 	totalMaxNodes := 0.0
 
@@ -54,14 +76,22 @@ func EstimateDistributionMetrics(dist *Distribution, clusterMetrics map[string]C
 			}
 
 			// Calculate resource requirements for replicas
-			replicas := float64(replicaCount)
-			totalCPURequired := float64(cpuPerReplica) * replicas
-			totalMemoryRequired := float64(memoryPerReplica) * replicas
+			// replicas := float64(replicaCount)
+			// totalCPURequired := float64(cpuPerReplica) * replicas
+			// totalMemoryRequired := float64(memoryPerReplica) * replicas
 
+			// Bin-packing calculation for nodes required
+			nodesRequired := float64(binPackNodes(
+				int(replicaCount),
+				float64(cpuPerReplica),
+				float64(memoryPerReplica),
+				workerCPUCapacity,
+				workerMemoryCapacity,
+			))
 			// Calculate worker nodes needed (with fragmentation)
-			cpuNodesRequired := totalCPURequired / workerCPUCapacity
-			memNodesRequired := totalMemoryRequired / workerMemoryCapacity
-			nodesRequired := math.Ceil(math.Max(cpuNodesRequired, memNodesRequired) * fragmentationFactor)
+			// cpuNodesRequired := totalCPURequired / workerCPUCapacity
+			// memNodesRequired := totalMemoryRequired / workerMemoryCapacity
+			// nodesRequired := math.Ceil(math.Max(cpuNodesRequired, memNodesRequired) * fragmentationFactor)
 
 			// Enforce max_worker_nodes constraint
 			if nodesRequired > maxWorkerNodes {
@@ -141,7 +171,7 @@ func calculateResourceEfficiency(dist *Distribution, clusterMetrics map[string]C
 
 		// Combined efficiency: balance packing and spare capacity
 		// clusterEff := packingEff * (0.5 + 0.5*spareCapacity)
-		clusterEff := packingEff 
+		clusterEff := packingEff
 		resourceEfficiency += clusterEff
 		clusterCount++
 

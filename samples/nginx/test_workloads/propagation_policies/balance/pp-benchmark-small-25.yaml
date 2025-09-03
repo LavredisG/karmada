@@ -1,13 +1,13 @@
 apiVersion: policy.karmada.io/v1alpha1
 kind: PropagationPolicy
 metadata:
-  name: pp-benchmark-large-15
+  name: pp-benchmark-small-25
 spec:
-  schedulerName: custom-balanced-scheduler
+  schedulerName: custom-balance-scheduler
   resourceSelectors:
   - apiVersion: apps/v1
     kind: Deployment
-    name: benchmark-large-15
+    name: benchmark-small-25
   placement:
     clusterAffinity:
       clusterNames:

@@ -20,5 +20,5 @@ spec:
         image: nginx:stable
         resources:
           requests:
-            cpu: 50m
-            memory: 64Mi
+            cpu: 250m
+            memory: 256Mi

@@ -11,7 +11,7 @@ deployment_names = [
     "benchmark-xlarge-5", "benchmark-xlarge-10", "benchmark-xlarge-15", "benchmark-xlarge-20", "benchmark-xlarge-25"
 ]
 
-CRITERIA = ["power", "cost", "latency", "efficiency", "balanced"]
+CRITERIA = ["power", "cost", "latency", "efficiency", "balanced", "fairness"]
 # Set your scheduler name (change per criterion)
 # SCHEDULER_NAME = "custom-latency-scheduler"
 

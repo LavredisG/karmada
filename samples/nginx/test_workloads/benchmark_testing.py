@@ -5,7 +5,7 @@ import yaml
 import re
 
 # --- CONFIGURATION ---
-criterion = "fairness"  # change as needed
+criterion = "balance"  # change as needed
 pp_dir = f"./propagation_policies/{criterion}/"
 deploy_dir = "./deployment_workloads/"
 home = os.environ["HOME"]
@@ -13,7 +13,6 @@ ahp_service_path = f"{home}/workspace/karmada/pkg/scheduler/framework/plugins/di
 weights_updater_path = f"{home}/workspace/karmada/pkg/scheduler/framework/plugins/distributionscorer/weights_updater_service.py"
 allocation_log = f"allocations/allocation_{criterion}.log"
 
-# Only up to large-25, not xlarge
 profiles = ["small", "medium", "large", "xlarge"]
 replicas = [5, 10, 15, 20, 25]
 

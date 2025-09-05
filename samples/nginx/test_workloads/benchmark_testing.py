@@ -11,7 +11,7 @@ deploy_dir = "./deployment_workloads/"
 home = os.environ["HOME"]
 ahp_service_path = f"{home}/workspace/karmada/pkg/scheduler/framework/plugins/distributionscorer/ahp_service.py"
 weights_updater_path = f"{home}/workspace/karmada/pkg/scheduler/framework/plugins/distributionscorer/weights_updater_service.py"
-allocation_log = f"allocation_{criterion}.log"
+allocation_log = f"allocations/allocation_{criterion}.log"
 
 # Only up to large-25, not xlarge
 profiles = ["small", "medium", "large", "xlarge"]

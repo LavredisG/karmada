@@ -72,7 +72,6 @@ func CalculateDistributionMetrics(dist *Distribution, clusterMetrics map[string]
 				return false // Reject distribution
 			}
 
-
 			// Bin-packing calculation for nodes required
 			nodesRequired := float64(binPackNodes(
 				int(replicaCount),
@@ -111,15 +110,15 @@ func CalculateDistributionMetrics(dist *Distribution, clusterMetrics map[string]
 	dist.Metrics["cost"] = totalCost
 
 	// Resource efficiency: measures how well resources are packed into nodes.
-    // We use the average of CPU and memory utilization per node, which balances both bottlenecks.
+	// We use the average of CPU and memory utilization per node, which balances both bottlenecks.
 	resourceEfficiency := calculateResourceEfficiency(dist, clusterMetrics, cpuPerReplica, memoryPerReplica, nodesByCluster)
 	dist.Metrics["resource_efficiency"] = math.Floor(resourceEfficiency*1000) / 1000 // Round to 3 decimal places
 
 	// Load balance: measures how evenly replicas are distributed relative to cluster resource capacity.
-    // Uses standard deviation of normalized load ratios (replica% / capacity%)
+	// Uses standard deviation of normalized load ratios (replica% / capacity%)
 	loadBalanceStdDev := calculateLoadBalanceStdDev(dist, clusterMetrics, totalReplicas)
 	dist.Metrics["load_balance_std_dev"] = math.Floor(loadBalanceStdDev*1000) / 1000 // Round to 3 decimal places
-	
+
 	// Weighted latency: average latency weighted by replica count.
 	weightedLatency := calculateWeightedLatency(dist, clusterMetrics)
 	dist.Metrics["weighted_latency"] = weightedLatency
@@ -133,52 +132,41 @@ func CalculateDistributionMetrics(dist *Distribution, clusterMetrics map[string]
 	return true // Feasible distribution
 }
 
-// calculateResourceEfficiency calculates the resource efficiency score for a distribution
+// calculateResourceEfficiency calculates the resource efficiency for a distribution.
 func calculateResourceEfficiency(dist *Distribution, clusterMetrics map[string]ClusterMetrics,
-	cpuPerReplica, memoryPerReplica int64, nodesByCluster map[string]float64) float64 {
+    cpuPerReplica, memoryPerReplica int64, nodesByCluster map[string]float64) float64 {
 
-	resourceEfficiency := 0.0
-	clusterCount := 0
+    totalWeightedEfficiency := 0.0
+    totalReplicas := 0
 
-	for clusterName, replicaCount := range dist.Allocation {
-		if replicaCount == 0 {
-			continue // Skip clusters with no allocation
-		}
+    for clusterName, replicaCount := range dist.Allocation {
+        if replicaCount == 0 {
+            continue
+        }
 
-		metrics := clusterMetrics[clusterName]
-		workerCPUCapacity := metrics.Metrics["worker_cpu_capacity"]
-		workerMemoryCapacity := metrics.Metrics["worker_memory_capacity"]
-		maxWorkerNodes := metrics.Metrics["max_worker_nodes"]
-		nodesRequired := nodesByCluster[clusterName]
+        metrics := clusterMetrics[clusterName]
+        workerCPUCapacity := metrics.Metrics["worker_cpu_capacity"]
+        workerMemoryCapacity := metrics.Metrics["worker_memory_capacity"]
+        nodesRequired := nodesByCluster[clusterName]
 
-		// Calculate actual resource usage per node
-		cpuUtil := float64(replicaCount) * float64(cpuPerReplica) / (nodesRequired * workerCPUCapacity)
-		memUtil := float64(replicaCount) * float64(memoryPerReplica) / (nodesRequired * workerMemoryCapacity)
+        // Calculate resource utilization per node
+        cpuUtil := float64(replicaCount) * float64(cpuPerReplica) / (nodesRequired * workerCPUCapacity)
+        memUtil := float64(replicaCount) * float64(memoryPerReplica) / (nodesRequired * workerMemoryCapacity)
 
-		// Packing efficiency: average of CPU and memory utilization per node.
-        // This balances both resources and avoids favoring one bottleneck.
-		packingEff := (cpuUtil + memUtil) / 2
+        // Packing efficiency: average of CPU and memory utilization
+        packingEff := (cpuUtil + memUtil) / 2
 
-		// Spare capacity (how much room we leave for future allocations)
-		// spareCapacity := 1.0 - (nodesRequired / maxWorkerNodes)
+        // Weight efficiency by replica count
+        totalWeightedEfficiency += packingEff * float64(replicaCount)
+        totalReplicas += replicaCount
+    }
 
-		// Combined efficiency: balance packing and spare capacity
-		// clusterEff := packingEff * (0.5 + 0.5*spareCapacity)
-		clusterEff := packingEff
-		resourceEfficiency += clusterEff
-		clusterCount++
+    if totalReplicas == 0 {
+        return 0.0
+    }
 
-		klog.V(4).Infof("Cluster %s: packing_eff=%.2f, combined_eff=%.2f",
-			clusterName, packingEff, clusterEff)
-		klog.V(4).Infof("Cluster %s: CPU Utilization=%.2f, Memory Utilization=%.2f",
-			clusterName, cpuUtil, memUtil)
-		klog.V(4).Infof("Cluster %s: Nodes Required=%.2f, Max Worker Nodes=%.2f",
-			clusterName, nodesRequired, maxWorkerNodes)
-	}
-
-	// log
-	klog.V(4).Infof("Total resource efficiency for distribution %s: %.3f", dist.ID, resourceEfficiency/float64(clusterCount))
-	return resourceEfficiency / float64(clusterCount)
+    efficiency := totalWeightedEfficiency / float64(totalReplicas)
+    return math.Floor(efficiency*1000) / 1000 // Round to 3 decimal places
 }
 
 // calculateLoadBalanceStdDev calculates the load balance standard deviation for a distribution.
@@ -194,14 +182,15 @@ func calculateLoadBalanceStdDev(dist *Distribution, clusterMetrics map[string]Cl
 	}
 
 	// Calculate total CPU capacity across all clusters
+	// Memory ratios are the same as CPU ratios for load balancing, so we focus on one of them
 	totalCPUCapacity := 0.0
 	clusterCPUCapacities := make(map[string]float64)
 	for clusterName, metrics := range clusterMetrics {
 		maxNodes := metrics.Metrics["max_worker_nodes"]
-        workerCPU := metrics.Metrics["worker_cpu_capacity"]
-        clusterCPUCapacity := maxNodes * workerCPU
-        clusterCPUCapacities[clusterName] = clusterCPUCapacity
-        totalCPUCapacity += clusterCPUCapacity
+		workerCPU := metrics.Metrics["worker_cpu_capacity"]
+		clusterCPUCapacity := maxNodes * workerCPU
+		clusterCPUCapacities[clusterName] = clusterCPUCapacity
+		totalCPUCapacity += clusterCPUCapacity
 	}
 
 	loadRatios := make([]float64, 0, len(clusterMetrics))

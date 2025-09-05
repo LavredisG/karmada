@@ -5,10 +5,10 @@ import yaml
 
 # Define resource profiles
 resource_profiles = {
-    "small":      {"cpu": "50m",   "memory": "64Mi"},
-    "medium":     {"cpu": "200m",  "memory": "128Mi"},
-    "large":      {"cpu": "1000m", "memory": "1Gi"},
-    "xlarge":     {"cpu": "2000m", "memory": "2Gi"},
+    "small":      {"cpu": "250m",   "memory": "256Mi"},
+    "medium":     {"cpu": "500m",  "memory": "512Mi"},
+    "large":      {"cpu": "1000m", "memory": "2Gi"},
+    "xlarge":     {"cpu": "2000m", "memory": "4Gi"},
 }
 
 replica_counts = [5, 10, 15, 20, 25]

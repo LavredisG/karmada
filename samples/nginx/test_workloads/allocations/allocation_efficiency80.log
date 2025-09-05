@@ -1,0 +1,120 @@
+benchmark-small-5: edge=5
+I0905 13:40:57.637676       1 calculate_metrics.go:37] Estimating metrics for distribution (0,5,0)
+I0905 13:40:57.637683       1 calculate_metrics.go:59] Cluster cloud is idle (control plane only). Power: 15.00, Cost: 30.00
+I0905 13:40:57.637691       1 calculate_metrics.go:100] Cluster edge needs 1 worker nodes, power: 40.00, cost: 60.00
+I0905 13:40:57.637699       1 calculate_metrics.go:59] Cluster fog is idle (control plane only). Power: 30.00, Cost: 45.00
+I0905 13:40:57.637710       1 calculate_metrics.go:130] [32mDistribution (0,5,0): Total Power=125.00, Total Cost=195.00, Resource Efficiency=0.468, Load Balance StdDev=9.899, WeightedLatency=10.00[0m
+benchmark-small-10: edge=8, fog=2
+I0905 13:41:51.428906       1 calculate_metrics.go:37] Estimating metrics for distribution (0,8,2)
+I0905 13:41:51.428914       1 calculate_metrics.go:59] Cluster cloud is idle (control plane only). Power: 15.00, Cost: 30.00
+I0905 13:41:51.428921       1 calculate_metrics.go:100] Cluster edge needs 1 worker nodes, power: 40.00, cost: 60.00
+I0905 13:41:51.428963       1 calculate_metrics.go:100] Cluster fog needs 1 worker nodes, power: 70.00, cost: 100.00
+I0905 13:41:51.428976       1 calculate_metrics.go:130] [32mDistribution (0,8,2): Total Power=195.00, Total Cost=295.00, Resource Efficiency=0.618, Load Balance StdDev=7.684, WeightedLatency=13.00[0m
+benchmark-small-15: edge=15
+I0905 13:42:47.283039       1 calculate_metrics.go:37] Estimating metrics for distribution (0,15,0)
+I0905 13:42:47.283044       1 calculate_metrics.go:100] Cluster edge needs 2 worker nodes, power: 80.00, cost: 120.00
+I0905 13:42:47.283049       1 calculate_metrics.go:59] Cluster fog is idle (control plane only). Power: 30.00, Cost: 45.00
+I0905 13:42:47.283053       1 calculate_metrics.go:59] Cluster cloud is idle (control plane only). Power: 15.00, Cost: 30.00
+I0905 13:42:47.283060       1 calculate_metrics.go:130] [32mDistribution (0,15,0): Total Power=165.00, Total Cost=255.00, Resource Efficiency=0.703, Load Balance StdDev=9.899, WeightedLatency=10.00[0m
+benchmark-small-20: fog=16, edge=4
+I0905 13:43:42.397469       1 calculate_metrics.go:37] Estimating metrics for distribution (0,4,16)
+I0905 13:43:42.397475       1 calculate_metrics.go:100] Cluster fog needs 1 worker nodes, power: 70.00, cost: 100.00
+I0905 13:43:42.397481       1 calculate_metrics.go:59] Cluster cloud is idle (control plane only). Power: 15.00, Cost: 30.00
+I0905 13:43:42.397486       1 calculate_metrics.go:100] Cluster edge needs 1 worker nodes, power: 40.00, cost: 60.00
+I0905 13:43:42.397492       1 calculate_metrics.go:130] [32mDistribution (0,4,16): Total Power=195.00, Total Cost=295.00, Resource Efficiency=0.675, Load Balance StdDev=1.979, WeightedLatency=22.00[0m
+benchmark-small-25: edge=24, fog=1
+I0905 13:44:38.434726       1 calculate_metrics.go:37] Estimating metrics for distribution (0,24,1)
+I0905 13:44:38.434731       1 calculate_metrics.go:59] Cluster cloud is idle (control plane only). Power: 15.00, Cost: 30.00
+I0905 13:44:38.434737       1 calculate_metrics.go:100] Cluster edge needs 3 worker nodes, power: 120.00, cost: 180.00
+I0905 13:44:38.434742       1 calculate_metrics.go:100] Cluster fog needs 1 worker nodes, power: 70.00, cost: 100.00
+I0905 13:44:38.434752       1 calculate_metrics.go:130] [32mDistribution (0,24,1): Total Power=275.00, Total Cost=415.00, Resource Efficiency=0.721, Load Balance StdDev=9.454, WeightedLatency=10.60[0m
+benchmark-medium-5: edge=4, fog=1
+I0905 13:45:34.307841       1 calculate_metrics.go:37] Estimating metrics for distribution (0,4,1)
+I0905 13:45:34.307864       1 calculate_metrics.go:59] Cluster cloud is idle (control plane only). Power: 15.00, Cost: 30.00
+I0905 13:45:34.307872       1 calculate_metrics.go:100] Cluster edge needs 1 worker nodes, power: 40.00, cost: 60.00
+I0905 13:45:34.307878       1 calculate_metrics.go:100] Cluster fog needs 1 worker nodes, power: 70.00, cost: 100.00
+I0905 13:45:34.307889       1 calculate_metrics.go:130] [32mDistribution (0,4,1): Total Power=195.00, Total Cost=295.00, Resource Efficiency=0.618, Load Balance StdDev=7.684, WeightedLatency=13.00[0m
+benchmark-medium-10: fog=8, edge=2
+I0905 13:46:29.443067       1 calculate_metrics.go:37] Estimating metrics for distribution (0,2,8)
+I0905 13:46:29.443078       1 calculate_metrics.go:59] Cluster cloud is idle (control plane only). Power: 15.00, Cost: 30.00
+I0905 13:46:29.443086       1 calculate_metrics.go:100] Cluster edge needs 1 worker nodes, power: 40.00, cost: 60.00
+I0905 13:46:29.443100       1 calculate_metrics.go:100] Cluster fog needs 1 worker nodes, power: 70.00, cost: 100.00
+I0905 13:46:29.443110       1 calculate_metrics.go:130] [32mDistribution (0,2,8): Total Power=195.00, Total Cost=295.00, Resource Efficiency=0.675, Load Balance StdDev=1.979, WeightedLatency=22.00[0m
+benchmark-medium-15: cloud=15
+I0905 13:47:23.673687       1 calculate_metrics.go:37] Estimating metrics for distribution (15,0,0)
+I0905 13:47:23.673693       1 calculate_metrics.go:100] Cluster cloud needs 1 worker nodes, power: 100.00, cost: 140.00
+I0905 13:47:23.673699       1 calculate_metrics.go:59] Cluster edge is idle (control plane only). Power: 40.00, Cost: 60.00
+I0905 13:47:23.673705       1 calculate_metrics.go:59] Cluster fog is idle (control plane only). Power: 30.00, Cost: 45.00
+I0905 13:47:23.673720       1 calculate_metrics.go:130] [32mDistribution (15,0,0): Total Power=185.00, Total Cost=275.00, Resource Efficiency=0.703, Load Balance StdDev=0.618, WeightedLatency=50.00[0m
+benchmark-medium-20: cloud=15, fog=4, edge=1
+I0905 13:48:21.320691       1 calculate_metrics.go:37] Estimating metrics for distribution (15,1,4)
+I0905 13:48:21.320723       1 calculate_metrics.go:100] Cluster cloud needs 1 worker nodes, power: 100.00, cost: 140.00
+I0905 13:48:21.320750       1 calculate_metrics.go:100] Cluster edge needs 1 worker nodes, power: 40.00, cost: 60.00
+I0905 13:48:21.320775       1 calculate_metrics.go:100] Cluster fog needs 1 worker nodes, power: 70.00, cost: 100.00
+I0905 13:48:21.320807       1 calculate_metrics.go:130] [32mDistribution (15,1,4): Total Power=295.00, Total Cost=435.00, Resource Efficiency=0.611, Load Balance StdDev=0.030, WeightedLatency=43.00[0m
+benchmark-medium-25: cloud=16, fog=8, edge=1
+I0905 13:49:16.302265       1 calculate_metrics.go:37] Estimating metrics for distribution (16,1,8)
+I0905 13:49:16.302306       1 calculate_metrics.go:100] Cluster edge needs 1 worker nodes, power: 40.00, cost: 60.00
+I0905 13:49:16.302350       1 calculate_metrics.go:100] Cluster fog needs 1 worker nodes, power: 70.00, cost: 100.00
+I0905 13:49:16.302391       1 calculate_metrics.go:100] Cluster cloud needs 1 worker nodes, power: 100.00, cost: 140.00
+I0905 13:49:16.302462       1 calculate_metrics.go:130] [32mDistribution (16,1,8): Total Power=295.00, Total Cost=435.00, Resource Efficiency=0.727, Load Balance StdDev=0.395, WeightedLatency=40.40[0m
+benchmark-large-5: fog=4, edge=1
+I0905 13:50:12.520993       1 calculate_metrics.go:37] Estimating metrics for distribution (4,0,1)
+I0905 13:50:12.521000       1 calculate_metrics.go:59] Cluster cloud is idle (control plane only). Power: 15.00, Cost: 30.00
+I0905 13:50:12.521008       1 calculate_metrics.go:100] Cluster edge needs 1 worker nodes, power: 40.00, cost: 60.00
+I0905 13:50:12.521014       1 calculate_metrics.go:100] Cluster fog needs 1 worker nodes, power: 70.00, cost: 100.00
+I0905 13:50:12.521025       1 calculate_metrics.go:130] [32mDistribution (4,0,1): Total Power=195.00, Total Cost=295.00, Resource Efficiency=0.900, Load Balance StdDev=1.979, WeightedLatency=22.00[0m
+benchmark-large-10: fog=8, edge=2
+I0905 13:51:05.432895       1 calculate_metrics.go:37] Estimating metrics for distribution (8,0,2)
+I0905 13:51:05.432902       1 calculate_metrics.go:59] Cluster cloud is idle (control plane only). Power: 15.00, Cost: 30.00
+I0905 13:51:05.432909       1 calculate_metrics.go:100] Cluster edge needs 1 worker nodes, power: 40.00, cost: 60.00
+I0905 13:51:05.432915       1 calculate_metrics.go:100] Cluster fog needs 2 worker nodes, power: 140.00, cost: 200.00
+I0905 13:51:05.432926       1 calculate_metrics.go:130] [32mDistribution (8,0,2): Total Power=265.00, Total Cost=395.00, Resource Efficiency=1.000, Load Balance StdDev=1.979, WeightedLatency=22.00[0m
+benchmark-large-15: cloud=15
+I0905 13:52:02.121337       1 calculate_metrics.go:37] Estimating metrics for distribution (15,0,0)
+I0905 13:52:02.121342       1 calculate_metrics.go:100] Cluster cloud needs 2 worker nodes, power: 200.00, cost: 280.00
+I0905 13:52:02.121349       1 calculate_metrics.go:59] Cluster edge is idle (control plane only). Power: 40.00, Cost: 60.00
+I0905 13:52:02.121354       1 calculate_metrics.go:59] Cluster fog is idle (control plane only). Power: 30.00, Cost: 45.00
+I0905 13:52:02.121364       1 calculate_metrics.go:130] [32mDistribution (15,0,0): Total Power=285.00, Total Cost=415.00, Resource Efficiency=0.937, Load Balance StdDev=0.618, WeightedLatency=50.00[0m
+benchmark-large-20: cloud=15, fog=4, edge=1
+I0905 13:52:57.282225       1 calculate_metrics.go:37] Estimating metrics for distribution (15,1,4)
+I0905 13:52:57.282232       1 calculate_metrics.go:100] Cluster edge needs 1 worker nodes, power: 40.00, cost: 60.00
+I0905 13:52:57.282238       1 calculate_metrics.go:100] Cluster fog needs 1 worker nodes, power: 70.00, cost: 100.00
+I0905 13:52:57.282244       1 calculate_metrics.go:100] Cluster cloud needs 2 worker nodes, power: 200.00, cost: 280.00
+I0905 13:52:57.282258       1 calculate_metrics.go:130] [32mDistribution (15,1,4): Total Power=395.00, Total Cost=575.00, Resource Efficiency=0.928, Load Balance StdDev=0.030, WeightedLatency=43.00[0m
+benchmark-large-25: cloud=20, fog=4, edge=1
+I0905 13:53:52.615813       1 calculate_metrics.go:37] Estimating metrics for distribution (20,1,4)
+I0905 13:53:52.615821       1 calculate_metrics.go:100] Cluster cloud needs 3 worker nodes, power: 300.00, cost: 420.00
+I0905 13:53:52.615828       1 calculate_metrics.go:100] Cluster edge needs 1 worker nodes, power: 40.00, cost: 60.00
+I0905 13:53:52.615834       1 calculate_metrics.go:100] Cluster fog needs 1 worker nodes, power: 70.00, cost: 100.00
+I0905 13:53:52.615849       1 calculate_metrics.go:130] [32mDistribution (20,1,4): Total Power=495.00, Total Cost=715.00, Resource Efficiency=0.846, Load Balance StdDev=0.098, WeightedLatency=44.40[0m
+benchmark-xlarge-5: cloud=4, fog=1
+I0905 13:54:48.665972       1 calculate_metrics.go:37] Estimating metrics for distribution (1,4,0)
+I0905 13:54:48.665978       1 calculate_metrics.go:100] Cluster cloud needs 1 worker nodes, power: 100.00, cost: 140.00
+I0905 13:54:48.665984       1 calculate_metrics.go:59] Cluster edge is idle (control plane only). Power: 40.00, Cost: 60.00
+I0905 13:54:48.665992       1 calculate_metrics.go:100] Cluster fog needs 1 worker nodes, power: 70.00, cost: 100.00
+I0905 13:54:48.666003       1 calculate_metrics.go:130] [32mDistribution (1,4,0): Total Power=255.00, Total Cost=375.00, Resource Efficiency=0.900, Load Balance StdDev=0.494, WeightedLatency=45.00[0m
+benchmark-xlarge-10: cloud=8, fog=2
+I0905 13:55:43.146733       1 calculate_metrics.go:37] Estimating metrics for distribution (0,2,8)
+I0905 13:55:43.146739       1 calculate_metrics.go:100] Cluster fog needs 1 worker nodes, power: 70.00, cost: 100.00
+I0905 13:55:43.146751       1 calculate_metrics.go:100] Cluster cloud needs 2 worker nodes, power: 200.00, cost: 280.00
+I0905 13:55:43.146797       1 calculate_metrics.go:59] Cluster edge is idle (control plane only). Power: 40.00, Cost: 60.00
+I0905 13:55:43.146846       1 calculate_metrics.go:130] [32mDistribution (0,2,8): Total Power=355.00, Total Cost=515.00, Resource Efficiency=1.000, Load Balance StdDev=0.494, WeightedLatency=45.00[0m
+benchmark-xlarge-15: cloud=12, fog=2, edge=1
+I0905 13:56:38.974558       1 calculate_metrics.go:37] Estimating metrics for distribution (12,1,2)
+I0905 13:56:38.974565       1 calculate_metrics.go:100] Cluster cloud needs 3 worker nodes, power: 300.00, cost: 420.00
+I0905 13:56:38.974571       1 calculate_metrics.go:100] Cluster edge needs 1 worker nodes, power: 40.00, cost: 60.00
+I0905 13:56:38.974578       1 calculate_metrics.go:100] Cluster fog needs 1 worker nodes, power: 70.00, cost: 100.00
+I0905 13:56:38.974589       1 calculate_metrics.go:130] [32mDistribution (12,1,2): Total Power=495.00, Total Cost=715.00, Resource Efficiency=1.000, Load Balance StdDev=0.285, WeightedLatency=44.00[0m
+benchmark-xlarge-20: cloud=15, fog=4, edge=1
+I0905 13:57:33.532138       1 calculate_metrics.go:37] Estimating metrics for distribution (15,1,4)
+I0905 13:57:33.532144       1 calculate_metrics.go:100] Cluster fog needs 2 worker nodes, power: 140.00, cost: 200.00
+I0905 13:57:33.532151       1 calculate_metrics.go:100] Cluster cloud needs 4 worker nodes, power: 400.00, cost: 560.00
+I0905 13:57:33.532157       1 calculate_metrics.go:100] Cluster edge needs 1 worker nodes, power: 40.00, cost: 60.00
+I0905 13:57:33.532166       1 calculate_metrics.go:130] [32mDistribution (15,1,4): Total Power=665.00, Total Cost=955.00, Resource Efficiency=0.953, Load Balance StdDev=0.030, WeightedLatency=43.00[0m
+benchmark-xlarge-25: cloud=20, fog=4, edge=1
+I0905 13:58:28.265315       1 calculate_metrics.go:37] Estimating metrics for distribution (20,1,4)
+I0905 13:58:28.265320       1 calculate_metrics.go:100] Cluster cloud needs 5 worker nodes, power: 500.00, cost: 700.00
+I0905 13:58:28.265325       1 calculate_metrics.go:100] Cluster edge needs 1 worker nodes, power: 40.00, cost: 60.00
+I0905 13:58:28.265329       1 calculate_metrics.go:100] Cluster fog needs 2 worker nodes, power: 140.00, cost: 200.00
+I0905 13:58:28.265335       1 calculate_metrics.go:130] [32mDistribution (20,1,4): Total Power=765.00, Total Cost=1095.00, Resource Efficiency=1.000, Load Balance StdDev=0.098, WeightedLatency=44.40[0m

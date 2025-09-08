@@ -46,7 +46,7 @@ try:
 
     # Load specific context
     config.load_kube_config(
-        config_file="/home/lavredis/.kube/config",
+        config_file=os.path.expanduser("~/.kube/config"),
         context=KARMADA_CONTEXT
     )
     custom_api = client.CustomObjectsApi()

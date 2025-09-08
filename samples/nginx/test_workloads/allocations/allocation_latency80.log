@@ -16,7 +16,7 @@ I0904 17:45:38.341243       1 calculate_metrics.go:59] Cluster fog is idle (cont
 I0904 17:45:38.341250       1 calculate_metrics.go:59] Cluster cloud is idle (control plane only). Power: 15.00, Cost: 30.00
 I0904 17:45:38.341256       1 calculate_metrics.go:100] Cluster edge needs 2 worker nodes, power: 80.00, cost: 120.00
 I0904 17:45:38.341266       1 calculate_metrics.go:130] [32mDistribution (0,15,0): Total Power=165.00, Total Cost=255.00, Resource Efficiency=0.703, Load Balance StdDev=9.899, WeightedLatency=10.00[0m
-benchmark-small-20: fog=7, cloud=7, edge=6
+benchmark-small-20: edge=20
 I0904 17:46:37.249015       1 calculate_metrics.go:37] Estimating metrics for distribution (0,0,20)
 I0904 17:46:37.249045       1 calculate_metrics.go:59] Cluster fog is idle (control plane only). Power: 30.00, Cost: 45.00
 I0904 17:46:37.249071       1 calculate_metrics.go:59] Cluster cloud is idle (control plane only). Power: 15.00, Cost: 30.00

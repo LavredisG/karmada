@@ -2,57 +2,19 @@ package distributionscorer
 
 import (
 	"context"
-	// "net/http"
 	"sync"
 
 	clusterv1alpha1 "github.com/karmada-io/karmada/pkg/apis/cluster/v1alpha1"
 	workv1alpha2 "github.com/karmada-io/karmada/pkg/apis/work/v1alpha2"
 	"github.com/karmada-io/karmada/pkg/scheduler/framework"
 	"k8s.io/klog/v2"
-	// "github.com/prometheus/client_golang/prometheus"
-	// "github.com/prometheus/client_golang/prometheus/promhttp"
 )
-
-// var (
-// 	finalDistribution = prometheus.NewGaugeVec(
-// 		prometheus.GaugeOpts{
-// 			Name: "final_distribution_allocation",
-// 			Help: "Final distribution allocation per cluster",
-// 		},
-// 		[]string{"cluster"},
-// 	)
-// 	cpuUsage = prometheus.NewGaugeVec(
-// 		prometheus.GaugeOpts{
-// 			Name: "cpu_usage_per_cluster",
-// 			Help: "CPU usage per cluster in millicores",
-// 		},
-// 		[]string{"cluster"},
-// 	)
-// 	costMetrics = prometheus.NewGaugeVec(
-// 		prometheus.GaugeOpts{
-// 			Name: "cost_metrics_per_cluster",
-// 			Help: "Cost metrics per cluster",
-// 		},
-// 		[]string{"cluster"},
-// 	)
-// )
-
-// func init() {
-// 	prometheus.MustRegister(finalDistribution)
-// 	prometheus.MustRegister(cpuUsage)
-// 	prometheus.MustRegister(costMetrics)
-
-// 	// Start HTTP server for Prometheus metrics
-// 	go func() {
-// 		http.Handle("/metrics", promhttp.Handler())
-// 		http.ListenAndServe(":8080", nil)
-// 	}()
-// }
 
 const (
 	Name = "DistributionScorer"
 
-	// Possible scenarios: power, cost, latency, efficiency, balance
+	// Possible scenarios: power60, power80, cost60, cost80, latency60, latency80,
+	// efficiency60, efficiency80, fairness60, fairness80, balance
 	selectedProfile = "balance"
 )
 
@@ -151,10 +113,10 @@ func (r *DistributionScorer) NormalizeScore(ctx context.Context, scores framewor
 	distributions := GenerateAllDistributions(clusterNames, totalReplicas)
 	klog.Infof("DistributionScorer: Generated %d possible distributions", len(distributions))
 
-	// Estimate metrics for each distribution
+	// Calculate metrics for each distribution
 	feasibleDistributions := []Distribution{}
 	for i := range distributions {
-		if EstimateDistributionMetrics(&distributions[i], clusterMetricsMap, r.cpuPerReplica, r.memoryPerReplica) {
+		if CalculateDistributionMetrics(&distributions[i], clusterMetricsMap, r.cpuPerReplica, r.memoryPerReplica) {
 			feasibleDistributions = append(feasibleDistributions, distributions[i])
 		}
 	}
@@ -167,7 +129,7 @@ func (r *DistributionScorer) NormalizeScore(ctx context.Context, scores framewor
 	// Prepare AHP request
 	request := DistributionAHPRequest{
 		Distributions: feasibleDistributions,
-		Criteria: getCriteriaForProfile(selectedProfile),
+		Criteria:      getCriteriaForProfile(selectedProfile),
 	}
 
 	// Evaluate distributions
@@ -215,15 +177,6 @@ func (r *DistributionScorer) NormalizeScore(ctx context.Context, scores framewor
 			clusterName, bestDist.Allocation[clusterName], replicaCount)
 	}
 
-	// Update Prometheus metrics
-	// for clusterName, replicaCount := range bestDist.Allocation {
-	// 	finalDistribution.WithLabelValues(clusterName).Set(float64(replicaCount))
-	// 	if metrics, ok := clusterMetricsMap[clusterName]; ok {
-	// 		cpuUsage.WithLabelValues(clusterName).Set(metrics.Metrics["worker_cpu_capacity"])
-	// 		costMetrics.WithLabelValues(clusterName).Set(metrics.Metrics["worker_cost"])
-	// 	}
-	// }
-
 	// Send updated scores to the updater service asynchronously
 	// NOTICE: THIS CAUSES THE SCORES TO BE UPDATED TWICE
 	// TOFIX
@@ -236,7 +189,7 @@ func getCriteriaForProfile(profile string) map[string]CriteriaConfig {
 	// This function should return the criteria configuration based on the selected profile
 	switch profile {
 	// prioritizes low-power placements but keep latency and efficiency considerations
-	case "power":
+	case "power60":
 		return map[string]CriteriaConfig{
 			"power":                {HigherIsBetter: false, Weight: 0.60},
 			"cost":                 {HigherIsBetter: false, Weight: 0.10},
@@ -244,8 +197,16 @@ func getCriteriaForProfile(profile string) map[string]CriteriaConfig {
 			"load_balance_std_dev": {HigherIsBetter: false, Weight: 0.10},
 			"weighted_latency":     {HigherIsBetter: false, Weight: 0.10},
 		}
+	case "power80":
+		return map[string]CriteriaConfig{
+			"power":                {HigherIsBetter: false, Weight: 0.80},
+			"cost":                 {HigherIsBetter: false, Weight: 0.05},
+			"resource_efficiency":  {HigherIsBetter: true, Weight: 0.05},
+			"load_balance_std_dev": {HigherIsBetter: false, Weight: 0.05},
+			"weighted_latency":     {HigherIsBetter: false, Weight: 0.05},
+		}
 	// minimizes monetary cost while not ignoring latency/efficiency
-	case "cost":
+	case "cost60":
 		return map[string]CriteriaConfig{
 			"power":                {HigherIsBetter: false, Weight: 0.10},
 			"cost":                 {HigherIsBetter: false, Weight: 0.60},
@@ -253,8 +214,16 @@ func getCriteriaForProfile(profile string) map[string]CriteriaConfig {
 			"load_balance_std_dev": {HigherIsBetter: false, Weight: 0.10},
 			"weighted_latency":     {HigherIsBetter: false, Weight: 0.10},
 		}
+	case "cost80":
+		return map[string]CriteriaConfig{
+			"power":                {HigherIsBetter: false, Weight: 0.05},
+			"cost":                 {HigherIsBetter: false, Weight: 0.80},
+			"resource_efficiency":  {HigherIsBetter: true, Weight: 0.05},
+			"load_balance_std_dev": {HigherIsBetter: false, Weight: 0.05},
+			"weighted_latency":     {HigherIsBetter: false, Weight: 0.05},
+		}
 	// prioritizes low-latency clusters for real-time workloads
-	case "latency":
+	case "latency60":
 		return map[string]CriteriaConfig{
 			"power":                {HigherIsBetter: false, Weight: 0.10},
 			"cost":                 {HigherIsBetter: false, Weight: 0.10},
@@ -262,8 +231,17 @@ func getCriteriaForProfile(profile string) map[string]CriteriaConfig {
 			"load_balance_std_dev": {HigherIsBetter: false, Weight: 0.10},
 			"weighted_latency":     {HigherIsBetter: false, Weight: 0.60},
 		}
+	case "latency80":
+		return map[string]CriteriaConfig{
+			"power":                {HigherIsBetter: false, Weight: 0.05},
+			"cost":                 {HigherIsBetter: false, Weight: 0.05},
+			"resource_efficiency":  {HigherIsBetter: true, Weight: 0.05},
+			"load_balance_std_dev": {HigherIsBetter: false, Weight: 0.05},
+			"weighted_latency":     {HigherIsBetter: false, Weight: 0.80},
+		}
+	// aims to use resources efficiently by trying to
 	// pack resources efficiently and balance load to reduce wasted capacity
-	case "efficiency":
+	case "efficiency60":
 		return map[string]CriteriaConfig{
 			"power":                {HigherIsBetter: false, Weight: 0.10},
 			"cost":                 {HigherIsBetter: false, Weight: 0.10},
@@ -271,6 +249,34 @@ func getCriteriaForProfile(profile string) map[string]CriteriaConfig {
 			"load_balance_std_dev": {HigherIsBetter: false, Weight: 0.10},
 			"weighted_latency":     {HigherIsBetter: false, Weight: 0.10},
 		}
+	case "efficiency80":
+		return map[string]CriteriaConfig{
+			"power":                {HigherIsBetter: false, Weight: 0.05},
+			"cost":                 {HigherIsBetter: false, Weight: 0.05},
+			"resource_efficiency":  {HigherIsBetter: true, Weight: 0.80},
+			"load_balance_std_dev": {HigherIsBetter: false, Weight: 0.05},
+			"weighted_latency":     {HigherIsBetter: false, Weight: 0.05},
+		}
+	// focuses on balancing load across clusters to avoid overloading any single cluster
+	// while still considering other factors
+	case "fairness60":
+		return map[string]CriteriaConfig{
+			"power":                {HigherIsBetter: false, Weight: 0.10},
+			"cost":                 {HigherIsBetter: false, Weight: 0.10},
+			"resource_efficiency":  {HigherIsBetter: true, Weight: 0.10},
+			"load_balance_std_dev": {HigherIsBetter: false, Weight: 0.60},
+			"weighted_latency":     {HigherIsBetter: false, Weight: 0.10},
+		}
+	case "fairness80":
+		return map[string]CriteriaConfig{
+			"power":                {HigherIsBetter: false, Weight: 0.05},
+			"cost":                 {HigherIsBetter: false, Weight: 0.05},
+			"resource_efficiency":  {HigherIsBetter: true, Weight: 0.05},
+			"load_balance_std_dev": {HigherIsBetter: false, Weight: 0.80},
+			"weighted_latency":     {HigherIsBetter: false, Weight: 0.05},
+		}
+	// a balanced approach that doesn't overly prioritize any single criterion but
+	// balances all criteria equally
 	case "balance":
 		fallthrough
 	default:

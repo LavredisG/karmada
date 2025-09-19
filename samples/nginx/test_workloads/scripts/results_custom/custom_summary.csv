@@ -1,0 +1,21 @@
+deployment,runs,median_s
+benchmark-large-10,10,0.021955 -> 22
+benchmark-large-15,10,0.024549 -> 25
+benchmark-large-20,10,0.025712 -> 26
+benchmark-large-25,10,0.031233 -> 31
+benchmark-large-5,10,0.018748 -> 19
+benchmark-medium-10,10,0.023544 -> 24
+benchmark-medium-15,10,0.026523 -> 27
+benchmark-medium-20,10,0.029988 -> 30
+benchmark-medium-25,10,0.036996 -> 37
+benchmark-medium-5,10,0.019130 -> 19
+benchmark-small-10,10,0.022332 -> 22
+benchmark-small-15,10,0.026212 -> 26
+benchmark-small-20,10,0.031560 -> 32
+benchmark-small-25,10,0.037752 -> 38
+benchmark-small-5,10,0.019756 -> 20
+benchmark-xlarge-10,10,0.021714 -> 22
+benchmark-xlarge-15,10,0.022897 -> 23
+benchmark-xlarge-20,10,0.022076 -> 22
+benchmark-xlarge-25,10,0.023794 -> 24
+benchmark-xlarge-5,10,0.019575 -> 20

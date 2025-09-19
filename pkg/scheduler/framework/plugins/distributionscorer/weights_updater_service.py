@@ -12,12 +12,12 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-scores_lock = Lock()
-cluster_scores = {}
+weights_lock = Lock()
+cluster_weights = {}
 last_update_time = 0
 UPDATE_THRESHOLD = int(os.getenv('UPDATE_THRESHOLD', '30'))
-SCORE_TIMEOUT = int(os.getenv('SCORE_TIMEOUT', '60'))  # seconds
-last_score_time = time.time()
+WEIGHT_TIMEOUT = int(os.getenv('WEIGHT_TIMEOUT', '60'))  # seconds
+last_weight_time = time.time()
 
 # Kubernetes configuration
 KARMADA_CONTEXT = os.getenv('KARMADA_CONTEXT', 'karmada-apiserver')  # Replace with your Karmada context
@@ -104,10 +104,10 @@ def start_cluster_patcher():
 
 
 def update_propagation_policy():
-    """Updates the PropagationPolicy with new weights based on collected scores."""
+    """Updates the PropagationPolicy with new weights based on collected weights."""
     try:
-        if not cluster_scores:
-            logger.warning("No scores available to update policy")
+        if not cluster_weights:
+            logger.warning("No weights available to update policy")
             return
 
         # Prepare new weights list with correct format
@@ -116,9 +116,9 @@ def update_propagation_policy():
                 "targetCluster": {
                     "clusterNames": [cluster]
                 },
-                "weight": int(score)
+                "weight": int(weight)
             }
-            for cluster, score in cluster_scores.items()
+            for cluster, weight in cluster_weights.items()
         ]
         
         # Create patch for the policy
@@ -159,45 +159,45 @@ def update_propagation_policy():
                 logger.error("Invalid weight values in patch")
 
 
-@app.route('/score', methods=['POST'])
-def update_score():
-    """Receives normalized scores from the ResourceScorer plugin."""
-    global last_update_time, last_score_time  # Add last_score_time to global declaration
+@app.route('/weights', methods=['POST'])
+def update_weights():
+    """Receives normalized weights from the DistributionScorer plugin."""
+    global last_update_time, last_weight_time  # Add last_weight_time to global declaration
 
     data = request.get_json()
-    if not data or 'cluster' not in data or 'score' not in data:
-        return jsonify({'error': 'Missing cluster or score'}), 400
+    if not data or 'cluster' not in data or 'weight' not in data:
+        return jsonify({'error': 'Missing cluster or weight'}), 400
 
     cluster = data['cluster']
-    score = data['score']
+    weight = data['weight']
 
-    with scores_lock:
+    with weights_lock:
         current_time = time.time()
-        if current_time - last_score_time > SCORE_TIMEOUT:
-            # Reset scores if too old
-            cluster_scores.clear()
-            last_score_time = current_time  # Now correctly updates global variable
-        cluster_scores[cluster] = score
-        app.logger.info(f"\033[32m    Received score for {cluster}: {score}\033[0m")
+        if current_time - last_weight_time > WEIGHT_TIMEOUT:
+            # Reset weights if too old
+            cluster_weights.clear()
+            last_weight_time = current_time  # Now correctly updates global variable
+        cluster_weights[cluster] = weight
+        app.logger.info(f"\033[32m    Received weight for {cluster}: {weight}\033[0m")
 
-        # Only update policy when we have scores for all clusters
+        # Only update policy when we have weights for all clusters
         expected_clusters = {'edge', 'fog', 'cloud'}
-        
-        if (set(cluster_scores.keys()) == expected_clusters and 
+
+        if (set(cluster_weights.keys()) == expected_clusters and
             current_time - last_update_time > UPDATE_THRESHOLD):
             update_propagation_policy()
             last_update_time = current_time
         else:
-            app.logger.info(f"    Waiting for all cluster scores. Current scores: {cluster_scores}")
+            app.logger.info(f"    Waiting for all cluster weights. Current weights: {cluster_weights}")
         
     return jsonify({'status': 'success'})
 
 
-@app.route('/scores', methods=['GET'])
-def get_scores():
-    """Returns the current scores for each cluster."""
-    with scores_lock:
-        return jsonify(cluster_scores)
+@app.route('/weights', methods=['GET'])
+def get_weights():
+    """Returns the current weights for each cluster."""
+    with weights_lock:
+        return jsonify(cluster_weights)
 
 
 @app.route('/health', methods=['GET'])
@@ -216,7 +216,7 @@ def health_check():
             'status': 'healthy',
             'karmada_connected': True,
             'last_update_time': last_update_time,
-            'scores_age': time.time() - last_score_time
+            'weights_age': time.time() - last_weight_time
         })
     except Exception as e:
         return jsonify({

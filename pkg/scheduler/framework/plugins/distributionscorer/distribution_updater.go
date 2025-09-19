@@ -9,42 +9,42 @@ import (
 )
 
 const (
-	distributionUpdaterEndpoint = "http://172.18.0.1:6001/score"
-)
+	distributionUpdaterEndpoint = "http://172.18.0.1:6001/weights"
+)	
 
-// UpdateClusterScores sends the scores from the best distribution to the updater server
-func UpdateClusterScores(distribution *Distribution) {
+// UpdateClusterWeights sends the weights from the best distribution to the updater server
+func UpdateClusterWeights(distribution *Distribution) {
 	if distribution == nil {
-		klog.Error("Cannot update cluster scores: nil distribution")
+		klog.Error("Cannot update cluster weights: nil distribution")
 		return
 	}
 
-	// For each cluster in the distribution, send its score (based on replica count)
+	// For each cluster in the distribution, send its weight (based on replica count)
 	for clusterName, replicaCount := range distribution.Allocation {
-		// Convert replica count to score (simple multiplication)
-		score := int64(replicaCount)
+		// Convert replica count to weight (simple multiplication)
+		weight := int64(replicaCount)
 
 		// Send to updater service
-		sendScore(clusterName, score)
+		sendWeight(clusterName, weight)
 	}
 }
 
-// sendScore sends a single cluster's score to the updater service
-func sendScore(clusterName string, score int64) {
+// sendWeight sends a single cluster's weight to the updater service
+func sendWeight(clusterName string, weight int64) {
 	payload := map[string]interface{}{
 		"cluster": clusterName,
-		"score":   score,
+		"weight":  weight,
 	}
 
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
-		klog.Errorf("Failed to marshal score for cluster %s: %v", clusterName, err)
+		klog.Errorf("Failed to marshal weight for cluster %s: %v", clusterName, err)
 		return
 	}
 
 	resp, err := http.Post(distributionUpdaterEndpoint, "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
-		klog.Errorf("Failed to send score for cluster %s to update server: %v", clusterName, err)
+		klog.Errorf("Failed to send weight for cluster %s to update server: %v", clusterName, err)
 		return
 	}
 	defer resp.Body.Close()
@@ -52,6 +52,6 @@ func sendScore(clusterName string, score int64) {
 	if resp.StatusCode != http.StatusOK {
 		klog.Errorf("Update server returned non-200 status for cluster %s: %d", clusterName, resp.StatusCode)
 	} else {
-		klog.Infof("Successfully sent score %d for cluster %s", score, clusterName)
+		klog.Infof("Successfully sent weight %d for cluster %s", weight, clusterName)
 	}
 }

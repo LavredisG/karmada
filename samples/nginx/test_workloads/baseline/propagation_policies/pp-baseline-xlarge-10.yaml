@@ -1,0 +1,22 @@
+apiVersion: policy.karmada.io/v1alpha1
+kind: PropagationPolicy
+metadata:
+  name: pp-baseline-xlarge-10
+  namespace: default
+spec:
+  resourceSelectors:
+  - apiVersion: apps/v1
+    kind: Deployment
+    name: benchmark-xlarge-10
+    namespace: default
+  placement:
+    clusterAffinity:
+      clusterNames:
+      - edge
+      - fog
+      - cloud
+    replicaScheduling:
+      replicaDivisionPreference: Weighted
+      replicaSchedulingType: Divided
+      weightPreference:
+        dynamicWeight: AvailableReplicas

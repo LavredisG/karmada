@@ -1,95 +1,70 @@
-# Distribution Scorer Plugin for Karmada Scheduler
+# DistributionScorer Plugin
 
-## Introduction
+The `DistributionScorer` plugin is a custom scheduling extension for the Karmada multi-cluster Scheduler Framework. It enables advanced, criteria-driven workload distribution across multiple Kubernetes clusters, optimizing for resource usage, cost, latency, power, efficiency, and load balancing.
 
-The DistributionScorer plugin is an advanced scoring plugin for the Karmada scheduler that optimizes workload distribution across clusters. It evaluates multiple dimensions including power consumption, cost, resource efficiency, load balance, and latency to find the optimal distribution of workload replicas.
+## Overview
 
-This plugin uses the Analytic Hierarchy Process (AHP) to make multi-criteria decisions, ensuring a balanced consideration of all relevant factors when deciding where to place workloads.
+This plugin evaluates all possible ways to distribute a workload's replicas across available clusters. For each candidate distribution, it calculates a set of metrics (such as cost, power, resource efficiency, load balance standard deviation, and weighted latency) using cluster labels and workload requirements. The plugin then ranks distributions using the Analytic Hierarchy Process (AHP), with configurable weights for each criterion, and selects the best feasible allocation.
 
-## Features
+## Key Features
 
-- **Multi-Criteria Decision Making**: Uses AHP to evaluate distributions based on multiple weighted criteria.
-- **Dynamic Weight Adjustment**: Automatically adjusts criteria weights based on workload characteristics.
-- **Comprehensive Metrics Collection**: Collects and analyzes metrics such as CPU capacity, memory capacity, power, and cost.
-- **Distribution Generation**: Creates and evaluates all possible workload distributions across clusters.
-- **Feasibility Checks**: Validates resource requirements to ensure practical distributions.
-- **Prometheus Integration**: Exposes detailed metrics for monitoring and visualization.
-- **Robust Error Handling**: Implements retry logic and comprehensive error reporting.
+- **Multi-criteria Optimization:** Supports weighted criteria for cost, power, latency, efficiency, and load balance.
+- **AHP-based Scoring:** Integrates with an external Python AHP service ([`ahp_service.py`](ahp_service.py)) for multi-criteria decision making.
+- **Feasibility Checks:** Ensures allocations respect cluster resource capacities and node limits..
+- **Detailed Metrics:** Logs and exposes metrics for each evaluated distribution for benchmarking and analysis.
 
-## Architecture
+## How It Works
 
-The plugin architecture consists of several components:
+1. **Metrics Collection:** For each cluster, the plugin collects resource and cost metrics from cluster labels.
+2. **Distribution Generation:** Generates all possible ways to assign replicas across clusters.
+3. **Feasibility Filtering:** Filters out distributions that exceed cluster capacities or node limits.
+4. **Metric Calculation:** Computes metrics for each feasible distribution (see [`calculate_metrics.go`](calculate_metrics.go)).
+5. **AHP Scoring:** Sends metrics and criteria weights to the AHP service to score each distribution.
+6. **Best Allocation Selection:** Picks the highest-scoring feasible distribution and updates cluster weights.
 
-1. **Metrics Collection**
-   - Collects metrics from each cluster including CPU, memory, power, cost, and latency.
-   - These metrics form the basis for evaluating different distribution options.
+## Configuration
 
-2. **Distribution Generation**
-   - Generates all possible ways to distribute workload replicas across available clusters.
-   - Eliminates distributions that don't meet resource requirements.
-
-3. **Dynamic Weight Determination**
-   - Analyzes workload characteristics to determine appropriate weights for each criterion.
-   - Supports customization through annotations.
-
-4. **AHP-Based Scoring**
-   - Uses AHP to compare distributions across multiple criteria.
-   - Normalizes scores for fair comparison.
-
-5. **Distribution Selection**
-   - Selects the highest-scoring distribution as the optimal solution.
-   - Ensures proper handling of zero-allocation cases.
+- **Criteria Profiles:** Profiles (e.g., `cost80`, `latency60`, `efficiency80`, `balance`) define the weights for each criterion. See [`distributionscorer.go`](distributionscorer.go) for available profiles.
+- **Cluster Labels:** Each cluster must be labeled with resource and cost metrics (e.g., `worker_cpu_capacity`, `worker_memory_capacity`, `worker_cost`, `latency`, `max_worker_nodes`).
+- **External Services:** Requires [`ahp_service.py`](ahp_service.py) and [`weights_updater_service.py`](weights_updater_service.py) to be running for scoring and dynamic weight updates.
 
 ## Usage
 
-### Configuration
+1. **Enable the Plugin:** Add `DistributionScorer` to your Karmada scheduler configuration.
+2. **Label Clusters:** Ensure all clusters have the required labels.
+3. **Configure PropagationPolicy:** Set up policies with the desired criteria profile.
+4. **Start External Services:** Run the AHP and weights updater services.
+5. **Deploy Workloads:** Apply deployments and propagation policies. The plugin will distribute replicas according to the selected optimization criteria.
 
-To enable the DistributionScorer plugin in Karmada, add it to your scheduler configuration:
-
-```yaml
-apiVersion: kubescheduler.config.k8s.io/v1
-kind: KubeSchedulerConfiguration
-...
-plugins:
-  score:
-    enabled:
-    - name: DistributionScorer
-```
-
-### Dynamic Weight Control
-
-You can control criterion weights through the following annotations on your workload:
-
-- `karmada.io/distribution-power-weight`: Weight for power efficiency (default: 0.25)
-- `karmada.io/distribution-cost-weight`: Weight for cost optimization (default: 0.25)
-- `karmada.io/distribution-efficiency-weight`: Weight for resource efficiency (default: 0.15)
-- `karmada.io/distribution-balance-weight`: Weight for load balancing (default: 0.15)
-- `karmada.io/distribution-latency-weight`: Weight for latency optimization (default: 0.20)
-
-Example:
-   - Labels: `cluster`
-   - Description: Tracks the cost metrics for each cluster.
-
-### Accessing Metrics
-Metrics are exposed at the `/metrics` endpoint on port `8080`. Configure Prometheus to scrape this endpoint:
+## Example
 
 ```yaml
-scrape_configs:
-  - job_name: 'karmada-distributionscorer'
-    static_configs:
-      - targets: ['<plugin-host>:8080']
+apiVersion: policy.karmada.io/v1alpha1
+kind: PropagationPolicy
+metadata:
+  name: pp-cost-optimized
+  namespace: default
+spec:
+  resourceSelectors:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: my-app
+      namespace: default
+  placement:
+    clusterAffinity:
+      clusterNames: [edge, fog, cloud]
+    replicaScheduling:
+      replicaDivisionPreference: Weighted
+      replicaSchedulingType: Divided
 ```
 
-## Grafana Dashboards
-To visualize the metrics, create Grafana dashboards with panels for:
-- Final distribution allocation.
-- CPU usage per cluster.
-- Cost metrics per cluster.
+## References
 
-## Future Enhancements
-- **Dynamic Weight Adjustment**: Allow dynamic adjustment of criteria weights based on workload requirements.
-- **Additional Metrics**: Include metrics for memory usage, network latency, and storage utilization.
-- **Advanced Visualization**: Provide pre-configured Grafana dashboards for easier setup.
+- [distributionscorer.go](distributionscorer.go)
+- [calculate_metrics.go](calculate_metrics.go)
+- [ahp_service.py](ahp_service.py)
+- [weights_updater_service.py](weights_updater_service.py)
 
-## Conclusion
-The DistributionScorer plugin enhances the Karmada scheduler by providing advanced scoring capabilities and detailed monitoring. It ensures optimal workload distribution while offering insights into cluster performance and resource utilization.
+## License
+
+This plugin is part of the Karmada project and is licensed under the Apache License 2.0.

@@ -6,7 +6,7 @@ import sys
 import textwrap
 
 def gen_pp(size: str, replicas: str, ns: str) -> str:
-    name = f"pp-baseline-{size}-{replicas}"
+    name = f"pp-benchmark-{size}-{replicas}"
     dep = f"benchmark-{size}-{replicas}"
     return textwrap.dedent(f"""\
     apiVersion: policy.karmada.io/v1alpha1

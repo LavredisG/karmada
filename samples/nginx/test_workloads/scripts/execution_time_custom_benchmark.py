@@ -14,7 +14,6 @@ import os
 import re
 import shutil
 import signal
-import socket
 import subprocess
 import sys
 import tempfile
@@ -33,8 +32,7 @@ NS_DEFAULT = "default"
 RUNS_DEFAULT = 10
 TIMEOUT_BEGIN_DEFAULT = 60
 TIMEOUT_END_DEFAULT = 180
-AHP_PORT = 6000
-WEIGHTS_PORT = 6001
+
 
 TIME_RE = re.compile(r'^[IWEF]\d{4}\s+(\d{2}):(\d{2}):(\d{2}\.\d+)')
 LOG_BEGIN_RE = re.compile(r'Begin scheduling resource binding')
@@ -53,13 +51,6 @@ def sh(cmd: List[str], capture: bool = False, check: bool = True) -> str:
         return subprocess.check_output(cmd, text=True).strip()
     subprocess.run(cmd, check=check)
     return ""
-
-def tcp_port_open(port: int, host: str = "127.0.0.1", timeout_s: float = 0.3) -> bool:
-    try:
-        with socket.create_connection((host, port), timeout=timeout_s):
-            return True
-    except OSError:
-        return False
 
 def scale_deploy(ctx: str, ns: str, deploy: str, replicas: int) -> None:
     sh(["kubectl", "--context", ctx, "-n", ns, "scale", "deploy", deploy, f"--replicas={replicas}"], check=False)

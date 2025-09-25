@@ -1,13 +1,13 @@
 apiVersion: policy.karmada.io/v1alpha1
 kind: PropagationPolicy
 metadata:
-  name: pp-baseline-small-15
+  name: pp-benchmark-xlarge-5
   namespace: default
 spec:
   resourceSelectors:
   - apiVersion: apps/v1
     kind: Deployment
-    name: benchmark-small-15
+    name: benchmark-xlarge-5
     namespace: default
   placement:
     clusterAffinity:

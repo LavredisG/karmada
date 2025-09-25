@@ -1,0 +1,80 @@
+benchmark-large-10: cloud=8, fog=2
+I0925 12:53:31.727578       1 util.go:102] Target cluster calculated by estimators (available cluster && maxAvailableReplicas): [{cloud 127} {fog 31} {edge 3}]
+I0925 12:53:31.727596       1 generic_scheduler.go:107] Assigned Replicas: [{cloud 8} {fog 2}]
+I0925 12:53:31.727605       1 scheduler.go:524] ResourceBinding(default/benchmark-large-10-deployment) scheduled to clusters [{cloud 8} {fog 2}]
+benchmark-large-15: cloud=12, fog=3
+I0925 12:53:56.100698       1 util.go:102] Target cluster calculated by estimators (available cluster && maxAvailableReplicas): [{cloud 127} {fog 31} {edge 3}]
+I0925 12:53:56.100715       1 generic_scheduler.go:107] Assigned Replicas: [{cloud 12} {fog 3}]
+I0925 12:53:56.100722       1 scheduler.go:524] ResourceBinding(default/benchmark-large-15-deployment) scheduled to clusters [{cloud 12} {fog 3}]
+benchmark-large-20: cloud=16, fog=4
+I0925 12:54:19.623992       1 util.go:102] Target cluster calculated by estimators (available cluster && maxAvailableReplicas): [{cloud 127} {fog 31} {edge 3}]
+I0925 12:54:19.624029       1 generic_scheduler.go:107] Assigned Replicas: [{cloud 16} {fog 4}]
+I0925 12:54:19.624046       1 scheduler.go:524] ResourceBinding(default/benchmark-large-20-deployment) scheduled to clusters [{cloud 16} {fog 4}]
+benchmark-large-25: cloud=20, fog=5
+I0925 12:54:43.720941       1 util.go:102] Target cluster calculated by estimators (available cluster && maxAvailableReplicas): [{cloud 127} {fog 31} {edge 3}]
+I0925 12:54:43.720964       1 generic_scheduler.go:107] Assigned Replicas: [{cloud 20} {fog 5}]
+I0925 12:54:43.720975       1 scheduler.go:524] ResourceBinding(default/benchmark-large-25-deployment) scheduled to clusters [{cloud 20} {fog 5}]
+benchmark-large-5: cloud=4, fog=1
+I0925 12:55:08.547500       1 util.go:102] Target cluster calculated by estimators (available cluster && maxAvailableReplicas): [{cloud 127} {fog 31} {edge 3}]
+I0925 12:55:08.547536       1 generic_scheduler.go:107] Assigned Replicas: [{cloud 4} {fog 1}]
+I0925 12:55:08.547557       1 scheduler.go:524] ResourceBinding(default/benchmark-large-5-deployment) scheduled to clusters [{cloud 4} {fog 1}]
+benchmark-medium-10: cloud=8, fog=2
+I0925 12:55:32.862775       1 util.go:102] Target cluster calculated by estimators (available cluster && maxAvailableReplicas): [{cloud 254} {fog 62} {edge 14}]
+I0925 12:55:32.862806       1 generic_scheduler.go:107] Assigned Replicas: [{cloud 8} {fog 2}]
+I0925 12:55:32.862826       1 scheduler.go:524] ResourceBinding(default/benchmark-medium-10-deployment) scheduled to clusters [{cloud 8} {fog 2}]
+benchmark-medium-15: cloud=12, fog=3
+I0925 12:55:57.129648       1 util.go:102] Target cluster calculated by estimators (available cluster && maxAvailableReplicas): [{cloud 254} {fog 62} {edge 14}]
+I0925 12:55:57.129671       1 generic_scheduler.go:107] Assigned Replicas: [{cloud 12} {fog 3}]
+I0925 12:55:57.129685       1 scheduler.go:524] ResourceBinding(default/benchmark-medium-15-deployment) scheduled to clusters [{cloud 12} {fog 3}]
+benchmark-medium-20: cloud=16, fog=4
+I0925 12:56:22.526955       1 util.go:102] Target cluster calculated by estimators (available cluster && maxAvailableReplicas): [{cloud 254} {fog 62} {edge 14}]
+I0925 12:56:22.526969       1 generic_scheduler.go:107] Assigned Replicas: [{cloud 16} {fog 4}]
+I0925 12:56:22.526977       1 scheduler.go:524] ResourceBinding(default/benchmark-medium-20-deployment) scheduled to clusters [{cloud 16} {fog 4}]
+benchmark-medium-25: cloud=20, edge=1, fog=4
+I0925 12:56:48.096242       1 util.go:102] Target cluster calculated by estimators (available cluster && maxAvailableReplicas): [{cloud 254} {fog 62} {edge 14}]
+I0925 12:56:48.096276       1 generic_scheduler.go:107] Assigned Replicas: [{cloud 20} {fog 4} {edge 1}]
+I0925 12:56:48.096295       1 scheduler.go:524] ResourceBinding(default/benchmark-medium-25-deployment) scheduled to clusters [{cloud 20} {fog 4} {edge 1}]
+benchmark-medium-5: cloud=4, fog=1
+I0925 12:57:13.219895       1 util.go:102] Target cluster calculated by estimators (available cluster && maxAvailableReplicas): [{cloud 254} {fog 62} {edge 14}]
+I0925 12:57:13.219923       1 generic_scheduler.go:107] Assigned Replicas: [{cloud 4} {fog 1}]
+I0925 12:57:13.219937       1 scheduler.go:524] ResourceBinding(default/benchmark-medium-5-deployment) scheduled to clusters [{cloud 4} {fog 1}]
+benchmark-small-10: cloud=8, fog=2
+I0925 12:57:37.569202       1 util.go:102] Target cluster calculated by estimators (available cluster && maxAvailableReplicas): [{cloud 508} {fog 124} {edge 28}]
+I0925 12:57:37.569240       1 generic_scheduler.go:107] Assigned Replicas: [{cloud 8} {fog 2}]
+I0925 12:57:37.569257       1 scheduler.go:524] ResourceBinding(default/benchmark-small-10-deployment) scheduled to clusters [{cloud 8} {fog 2}]
+benchmark-small-15: cloud=12, fog=3
+I0925 12:57:59.917325       1 util.go:102] Target cluster calculated by estimators (available cluster && maxAvailableReplicas): [{cloud 508} {fog 124} {edge 28}]
+I0925 12:57:59.917360       1 generic_scheduler.go:107] Assigned Replicas: [{cloud 12} {fog 3}]
+I0925 12:57:59.917385       1 scheduler.go:524] ResourceBinding(default/benchmark-small-15-deployment) scheduled to clusters [{cloud 12} {fog 3}]
+benchmark-small-20: cloud=16, fog=4
+I0925 12:58:24.899581       1 util.go:102] Target cluster calculated by estimators (available cluster && maxAvailableReplicas): [{cloud 508} {fog 124} {edge 28}]
+I0925 12:58:24.899601       1 generic_scheduler.go:107] Assigned Replicas: [{cloud 16} {fog 4}]
+I0925 12:58:24.899613       1 scheduler.go:524] ResourceBinding(default/benchmark-small-20-deployment) scheduled to clusters [{cloud 16} {fog 4}]
+benchmark-small-25: cloud=20, edge=1, fog=4
+I0925 12:58:48.394357       1 util.go:102] Target cluster calculated by estimators (available cluster && maxAvailableReplicas): [{cloud 508} {fog 124} {edge 28}]
+I0925 12:58:48.394390       1 generic_scheduler.go:107] Assigned Replicas: [{cloud 20} {fog 4} {edge 1}]
+I0925 12:58:48.394497       1 scheduler.go:524] ResourceBinding(default/benchmark-small-25-deployment) scheduled to clusters [{cloud 20} {fog 4} {edge 1}]
+benchmark-small-5: cloud=4, fog=1
+I0925 12:59:13.270986       1 util.go:102] Target cluster calculated by estimators (available cluster && maxAvailableReplicas): [{cloud 508} {fog 124} {edge 28}]
+I0925 12:59:13.271023       1 generic_scheduler.go:107] Assigned Replicas: [{cloud 4} {fog 1}]
+I0925 12:59:13.271040       1 scheduler.go:524] ResourceBinding(default/benchmark-small-5-deployment) scheduled to clusters [{cloud 4} {fog 1}]
+benchmark-xlarge-10: cloud=8, fog=2
+I0925 12:59:39.528682       1 util.go:102] Target cluster calculated by estimators (available cluster && maxAvailableReplicas): [{cloud 63} {fog 15} {edge 1}]
+I0925 12:59:39.528705       1 generic_scheduler.go:107] Assigned Replicas: [{cloud 8} {fog 2}]
+I0925 12:59:39.528725       1 scheduler.go:524] ResourceBinding(default/benchmark-xlarge-10-deployment) scheduled to clusters [{cloud 8} {fog 2}]
+benchmark-xlarge-15: cloud=12, fog=3
+I0925 13:00:02.993951       1 util.go:102] Target cluster calculated by estimators (available cluster && maxAvailableReplicas): [{cloud 63} {fog 15} {edge 1}]
+I0925 13:00:02.993975       1 generic_scheduler.go:107] Assigned Replicas: [{cloud 12} {fog 3}]
+I0925 13:00:02.993991       1 scheduler.go:524] ResourceBinding(default/benchmark-xlarge-15-deployment) scheduled to clusters [{cloud 12} {fog 3}]
+benchmark-xlarge-20: cloud=16, fog=4
+I0925 13:00:25.510940       1 util.go:102] Target cluster calculated by estimators (available cluster && maxAvailableReplicas): [{cloud 63} {fog 15} {edge 1}]
+I0925 13:00:25.510976       1 generic_scheduler.go:107] Assigned Replicas: [{cloud 16} {fog 4}]
+I0925 13:00:25.510990       1 scheduler.go:524] ResourceBinding(default/benchmark-xlarge-20-deployment) scheduled to clusters [{cloud 16} {fog 4}]
+benchmark-xlarge-25: cloud=20, fog=5
+I0925 13:00:48.894474       1 util.go:102] Target cluster calculated by estimators (available cluster && maxAvailableReplicas): [{cloud 63} {fog 15} {edge 1}]
+I0925 13:00:48.894533       1 generic_scheduler.go:107] Assigned Replicas: [{cloud 20} {fog 5}]
+I0925 13:00:48.894556       1 scheduler.go:524] ResourceBinding(default/benchmark-xlarge-25-deployment) scheduled to clusters [{cloud 20} {fog 5}]
+benchmark-xlarge-5: cloud=4, fog=1
+I0925 13:01:13.137023       1 util.go:102] Target cluster calculated by estimators (available cluster && maxAvailableReplicas): [{cloud 63} {fog 15} {edge 1}]
+I0925 13:01:13.137055       1 generic_scheduler.go:107] Assigned Replicas: [{cloud 4} {fog 1}]
+I0925 13:01:13.137069       1 scheduler.go:524] ResourceBinding(default/benchmark-xlarge-5-deployment) scheduled to clusters [{cloud 4} {fog 1}]

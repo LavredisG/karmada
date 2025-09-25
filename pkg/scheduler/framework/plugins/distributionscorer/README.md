@@ -65,6 +65,3 @@ spec:
 - [ahp_service.py](ahp_service.py)
 - [weights_updater_service.py](weights_updater_service.py)
 
-## License
-
-This plugin is part of the Karmada project and is licensed under the Apache License 2.0.

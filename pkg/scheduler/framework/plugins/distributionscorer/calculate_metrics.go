@@ -3,7 +3,7 @@ package distributionscorer
 import (
 	"math"
 
-	"k8s.io/klog/v2"
+ 	"k8s.io/klog/v2"
 )
 
 // binPackNodes calculates the number of nodes required to fit the given replicas
@@ -34,7 +34,7 @@ func binPackNodes(replicaCount int, perReplicaCPU, perReplicaMem, nodeCPU, nodeM
 func CalculateDistributionMetrics(dist *Distribution, clusterMetrics map[string]ClusterMetrics,
 	cpuPerReplica, memoryPerReplica int64) bool {
 
-	klog.V(4).Infof("Estimating metrics for distribution %s", dist.ID)
+	// klog.V(4).Infof("Calculating metrics for distribution %s", dist.ID)
 
 	var totalPower, totalCost float64
 	nodesByCluster := make(map[string]float64)
@@ -56,8 +56,8 @@ func CalculateDistributionMetrics(dist *Distribution, clusterMetrics map[string]
 
 			// Handle clusters with no replicas assigned
 			if replicaCount == 0 {
-				klog.V(4).Infof("Cluster %s is idle (control plane only). Power: %.2f, Cost: %.2f",
-					clusterName, controlPlanePower, controlPlaneCost)
+				// klog.V(4).Infof("Cluster %s is idle (control plane only). Power: %.2f, Cost: %.2f",
+					// clusterName, controlPlanePower, controlPlaneCost)
 				continue
 			}
 
@@ -83,8 +83,8 @@ func CalculateDistributionMetrics(dist *Distribution, clusterMetrics map[string]
 
 			// Enforce max_worker_nodes constraint
 			if nodesRequired > maxWorkerNodes {
-				klog.Warningf("Distribution %s is infeasible: Cluster %s cannot accommodate %.1f worker nodes (max: %.1f)",
-					dist.ID, clusterName, nodesRequired, maxWorkerNodes)
+				// klog.Warningf("Distribution %s is infeasible: Cluster %s cannot accommodate %.1f worker nodes (max: %.1f)",
+					// dist.ID, clusterName, nodesRequired, maxWorkerNodes)
 				return false
 			}
 
@@ -97,8 +97,8 @@ func CalculateDistributionMetrics(dist *Distribution, clusterMetrics map[string]
 			totalPower += workerPower * nodesRequired
 			totalCost += workerCost * nodesRequired
 
-			klog.V(4).Infof("Cluster %s needs %d worker nodes, power: %.2f, cost: %.2f",
-				clusterName, int(nodesRequired), workerPower*nodesRequired, workerCost*nodesRequired)
+			// klog.V(4).Infof("Cluster %s needs %d worker nodes, power: %.2f, cost: %.2f",
+				// clusterName, int(nodesRequired), workerPower*nodesRequired, workerCost*nodesRequired)
 		} else {
 			klog.Warningf("No metrics found for cluster %s", clusterName)
 			return false
@@ -109,10 +109,10 @@ func CalculateDistributionMetrics(dist *Distribution, clusterMetrics map[string]
 	dist.Metrics["power"] = totalPower
 	dist.Metrics["cost"] = totalCost
 
-	// Resource efficiency: measures how well resources are packed into nodes.
+	// Utilization: measures how well resources are packed into nodes.
 	// We use the average of CPU and memory utilization per node, which balances both bottlenecks.
-	resourceEfficiency := calculateResourceEfficiency(dist, clusterMetrics, cpuPerReplica, memoryPerReplica, nodesByCluster)
-	dist.Metrics["resource_efficiency"] = math.Floor(resourceEfficiency*1000) / 1000 // Round to 3 decimal places
+	utilization := calculateUtilization(dist, clusterMetrics, cpuPerReplica, memoryPerReplica, nodesByCluster)
+	dist.Metrics["utilization"] = math.Floor(utilization*1000) / 1000 // Round to 3 decimal places
 
 	// Load balance: measures how evenly replicas are distributed relative to cluster resource capacity.
 	// Uses standard deviation of normalized load ratios (replica% / capacity%)
@@ -127,16 +127,16 @@ func CalculateDistributionMetrics(dist *Distribution, clusterMetrics map[string]
 		dist.Metrics["worker_nodes_"+cluster] = nodes // Use "worker_nodes" prefix for clarity
 	}
 
-	klog.V(4).Infof("\033[32mDistribution %s: Total Power=%.2f, Total Cost=%.2f, Resource Efficiency=%.3f, Load Balance StdDev=%.3f, WeightedLatency=%.2f\033[0m",
-		dist.ID, totalPower, totalCost, dist.Metrics["resource_efficiency"], dist.Metrics["load_balance_std_dev"], weightedLatency)
+	// klog.V(4).Infof("\033[32mDistribution %s: Total Power=%.2f, Total Cost=%.2f, Utilization=%.3f, Load Balance StdDev=%.3f, WeightedLatency=%.2f\033[0m",
+		// dist.ID, totalPower, totalCost, dist.Metrics["utilization"], dist.Metrics["load_balance_std_dev"], weightedLatency)
 	return true // Feasible distribution
 }
 
-// calculateResourceEfficiency calculates the resource efficiency for a distribution.
-func calculateResourceEfficiency(dist *Distribution, clusterMetrics map[string]ClusterMetrics,
+// calculateUtilization calculates the resource utilization for a distribution.
+func calculateUtilization(dist *Distribution, clusterMetrics map[string]ClusterMetrics,
     cpuPerReplica, memoryPerReplica int64, nodesByCluster map[string]float64) float64 {
 
-    totalWeightedEfficiency := 0.0
+    totalWeightedUtilization := 0.0
     totalReplicas := 0
 
     for clusterName, replicaCount := range dist.Allocation {
@@ -153,11 +153,11 @@ func calculateResourceEfficiency(dist *Distribution, clusterMetrics map[string]C
         cpuUtil := float64(replicaCount) * float64(cpuPerReplica) / (nodesRequired * workerCPUCapacity)
         memUtil := float64(replicaCount) * float64(memoryPerReplica) / (nodesRequired * workerMemoryCapacity)
 
-        // Packing efficiency: average of CPU and memory utilization
-        packingEff := (cpuUtil + memUtil) / 2
+        // Packing utilization: average of CPU and memory utilization
+        packingUtil := (cpuUtil + memUtil) / 2
 
-        // Weight efficiency by replica count
-        totalWeightedEfficiency += packingEff * float64(replicaCount)
+        // Weight utilization by replica count
+        totalWeightedUtilization += packingUtil * float64(replicaCount)
         totalReplicas += replicaCount
     }
 
@@ -165,8 +165,8 @@ func calculateResourceEfficiency(dist *Distribution, clusterMetrics map[string]C
         return 0.0
     }
 
-    efficiency := totalWeightedEfficiency / float64(totalReplicas)
-    return math.Floor(efficiency*1000) / 1000 // Round to 3 decimal places
+    utilization := totalWeightedUtilization / float64(totalReplicas)
+    return math.Floor(utilization*1000) / 1000 // Round to 3 decimal places
 }
 
 // calculateLoadBalanceStdDev calculates the load balance standard deviation for a distribution.

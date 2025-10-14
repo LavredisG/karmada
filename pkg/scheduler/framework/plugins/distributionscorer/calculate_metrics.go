@@ -114,10 +114,11 @@ func CalculateDistributionMetrics(dist *Distribution, clusterMetrics map[string]
 	utilization := calculateUtilization(dist, clusterMetrics, cpuPerReplica, memoryPerReplica, nodesByCluster)
 	dist.Metrics["utilization"] = math.Floor(utilization*1000) / 1000 // Round to 3 decimal places
 
-	// Load balance: measures how evenly replicas are distributed relative to cluster resource capacity.
-	// Uses standard deviation of normalized load ratios (replica% / capacity%)
-	loadBalanceStdDev := calculateLoadBalanceStdDev(dist, clusterMetrics, totalReplicas)
-	dist.Metrics["load_balance_std_dev"] = math.Floor(loadBalanceStdDev*1000) / 1000 // Round to 3 decimal places
+	// Capacity proportionality: measures how proportionally replicas are distributed relative to cluster capacity.
+	// Uses RMS deviation from ideal ratio of 1.0, where each cluster gets replicas proportional to its capacity share.
+	// Lower value = better proportionality (0.0 = perfect proportionality)
+	capacityProportionalityStdDev := calculateCapacityProportionalityStdDev(dist, clusterMetrics, totalReplicas)
+	dist.Metrics["capacity_proportionality_std_dev"] = math.Floor(capacityProportionalityStdDev*1000) / 1000 // Round to 3 decimal places
 
 	// Weighted latency: average latency weighted by replica count.
 	weightedLatency := calculateWeightedLatency(dist, clusterMetrics)
@@ -127,8 +128,8 @@ func CalculateDistributionMetrics(dist *Distribution, clusterMetrics map[string]
 		dist.Metrics["worker_nodes_"+cluster] = nodes // Use "worker_nodes" prefix for clarity
 	}
 
-	// klog.V(4).Infof("\033[32mDistribution %s: Total Power=%.2f, Total Cost=%.2f, Utilization=%.3f, Load Balance StdDev=%.3f, WeightedLatency=%.2f\033[0m",
-		// dist.ID, totalPower, totalCost, dist.Metrics["utilization"], dist.Metrics["load_balance_std_dev"], weightedLatency)
+	// klog.V(4).Infof("\033[32mDistribution %s: Total Power=%.2f, Total Cost=%.2f, Utilization=%.3f, Capacity Proportionality StdDev=%.3f, WeightedLatency=%.2f\033[0m",
+		// dist.ID, totalPower, totalCost, dist.Metrics["utilization"], dist.Metrics["capacity_proportionality_std_dev"], weightedLatency)
 	return true // Feasible distribution
 }
 
@@ -169,84 +170,83 @@ func calculateUtilization(dist *Distribution, clusterMetrics map[string]ClusterM
     return math.Floor(utilization*1000) / 1000 // Round to 3 decimal places
 }
 
-// calculateLoadBalanceStdDev calculates the load balance standard deviation for a distribution.
-// This measures how evenly replicas are distributed relative to each cluster's total CPU capacity.
-// Lower stddev means more balanced allocation.
-func calculateLoadBalanceStdDev(dist *Distribution, clusterMetrics map[string]ClusterMetrics,
+// calculateCapacityProportionalityStdDev calculates the capacity proportionality standard deviation.
+// This measures how proportionally replicas are distributed relative to each cluster's capacity share.
+//
+// The metric uses RMS (Root Mean Square) deviation from the ideal load ratio of 1.0:
+//   - load_ratio = (replica% / capacity%)
+//   - ratio = 1.0 means a cluster gets exactly its proportional share of replicas
+//   - ratio > 1.0 means cluster is over-utilized (gets more replicas than its capacity share)
+//   - ratio < 1.0 means cluster is under-utilized (gets fewer replicas than its capacity share)
+//
+// Lower stddev = better proportionality (0.0 = perfect proportionality across all clusters)
+//
+// Example: If Cloud has 76% of capacity, ideally it should get 76% of replicas.
+func calculateCapacityProportionalityStdDev(dist *Distribution, clusterMetrics map[string]ClusterMetrics,
 	totalReplicas int) float64 {
 
-	// If no replicas, return 0 (perfect balance), not expected as a case
 	if totalReplicas == 0 {
-		klog.V(5).Infof("No replicas in distribution %s, returning 0 for load balance std dev", dist.ID)
+		klog.V(5).Infof("No replicas in distribution %s, returning 0 for capacity proportionality std dev", dist.ID)
 		return 0.0
 	}
 
 	// Calculate total CPU capacity across all clusters
-	// Memory ratios are the same as CPU ratios for load balancing, so we focus on one of them
 	totalCPUCapacity := 0.0
 	clusterCPUCapacities := make(map[string]float64)
+	
 	for clusterName, metrics := range clusterMetrics {
 		maxNodes := metrics.Metrics["max_worker_nodes"]
 		workerCPU := metrics.Metrics["worker_cpu_capacity"]
 		clusterCPUCapacity := maxNodes * workerCPU
-		clusterCPUCapacities[clusterName] = clusterCPUCapacity
-		totalCPUCapacity += clusterCPUCapacity
+		
+		if clusterCPUCapacity > 0 {
+			clusterCPUCapacities[clusterName] = clusterCPUCapacity
+			totalCPUCapacity += clusterCPUCapacity
+		}
 	}
 
-	loadRatios := make([]float64, 0, len(clusterMetrics))
-
-	// Calculate load ratios for ALL clusters in the metrics
-	for clusterName := range clusterMetrics {
-		// Cluster capacity as a percentage of total capacity
-		clusterCPUCapacity := clusterCPUCapacities[clusterName]
-		capacityPercentage := clusterCPUCapacity / totalCPUCapacity
-
-		replicaCount := dist.Allocation[clusterName]
-		replicaPercentage := float64(replicaCount) / float64(totalReplicas)
-
-		// Calculate normalized load ratio
-		// A perfectly balanced distribution would have replicaPercentage == capacityPercentage
-		// Deviation from this indicates imbalance
-		loadRatio := replicaPercentage / capacityPercentage
-
-		// Calculate load ratio - this is the portion of a cluster's capacity being used
-		loadRatios = append(loadRatios, loadRatio)
-		klog.V(5).Infof("Cluster %s load ratio: %.3f (replicas: %d/%d = %.2f%%, Resources capacity: %.1f/%.1f = %.2f%%)",
-			clusterName, loadRatio, replicaCount, totalReplicas,
-			replicaPercentage*100, clusterCPUCapacity, totalCPUCapacity, capacityPercentage*100)
-	}
-
-	// The length of loadRatios equals the number of clusters you have (e.g., 3)
-	// Each value is a ratio of how loaded that cluster is (nodesRequired/maxNodes)
-	stdDev := calculateStandardDeviation(loadRatios)
-	klog.V(5).Infof("Load balance std dev for distribution %s: %.3f", dist.ID, stdDev)
-	return stdDev
-}
-
-// calculateStandardDeviation calculates the standard deviation of a slice of float values.
-// Uses population standard deviation, appropriate since all clusters are considered.
-func calculateStandardDeviation(loadRatios []float64) float64 {
-	if len(loadRatios) <= 1 {
+	if totalCPUCapacity == 0 {
+		klog.V(5).Infof("Total CPU capacity is 0, returning 0 for capacity proportionality std dev")
 		return 0.0
 	}
 
-	// Calculate mean
-	sum := 0.0
-	for _, v := range loadRatios {
-		sum += v
-	}
-	meanLoadRatio := sum / float64(len(loadRatios))
+	// Calculate squared deviations from ideal ratio of 1.0
+	sumSquaredDeviations := 0.0
+	numClusters := 0
 
-	// Calculate variance
-	sumSquaredDiff := 0.0
-	for _, v := range loadRatios {
-		diff := v - meanLoadRatio
-		sumSquaredDiff += diff * diff
-	}
-	variance := sumSquaredDiff / float64(len(loadRatios))
+	for clusterName, clusterCPUCapacity := range clusterCPUCapacities {
+		// Cluster capacity as a percentage of total capacity
+		capacityPercentage := clusterCPUCapacity / totalCPUCapacity
 
-	// Return standard deviation
-	return math.Sqrt(variance)
+		// Replica allocation percentage for this cluster
+		replicaCount := dist.Allocation[clusterName]
+		replicaPercentage := float64(replicaCount) / float64(totalReplicas)
+
+		// Calculate load ratio
+		// Ideal ratio is 1.0 (cluster gets replicas proportional to its capacity)
+		loadRatio := replicaPercentage / capacityPercentage
+
+		// Deviation from ideal ratio of 1.0
+		deviation := loadRatio - 1.0
+		sumSquaredDeviations += deviation * deviation
+		numClusters++
+
+		klog.V(5).Infof("Cluster %s: replicas=%d/%d (%.2f%%), capacity=%.1f/%.1f (%.2f%%), load_ratio=%.3f, deviation=%.3f",
+			clusterName, replicaCount, totalReplicas, replicaPercentage*100,
+			clusterCPUCapacity, totalCPUCapacity, capacityPercentage*100,
+			loadRatio, deviation)
+	}
+
+	if numClusters <= 1 {
+		klog.V(5).Infof("Only %d cluster(s) with capacity, returning 0", numClusters)
+		return 0.0
+	}
+
+	// Calculate RMS (Root Mean Square) deviation
+	rmsDeviation := math.Sqrt(sumSquaredDeviations / float64(numClusters))
+	
+	klog.V(5).Infof("Capacity proportionality std dev for distribution %s: %.3f", dist.ID, rmsDeviation)
+	return rmsDeviation
 }
 
 // calculateWeightedLatency calculates the replica-weighted average latency for a distribution.
@@ -258,6 +258,10 @@ func calculateWeightedLatency(dist *Distribution, clusterMetrics map[string]Clus
 	totalReplicas := 0
 	for _, replicaCount := range dist.Allocation {
 		totalReplicas += replicaCount
+	}
+
+	if totalReplicas == 0 {
+		return 0.0
 	}
 
 	// Calculate total latency weight

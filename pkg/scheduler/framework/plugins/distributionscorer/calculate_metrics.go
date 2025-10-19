@@ -118,7 +118,7 @@ func CalculateDistributionMetrics(dist *Distribution, clusterMetrics map[string]
 	// Uses RMS deviation from ideal ratio of 1.0, where each cluster gets replicas proportional to its capacity share.
 	// Lower value = better proportionality (0.0 = perfect proportionality)
 	capacityProportionalityStdDev := calculateCapacityProportionalityStdDev(dist, clusterMetrics, totalReplicas)
-	dist.Metrics["capacity_proportionality_std_dev"] = math.Floor(capacityProportionalityStdDev*1000) / 1000 // Round to 3 decimal places
+	dist.Metrics["proportionality"] = math.Floor(capacityProportionalityStdDev*1000) / 1000 // Round to 3 decimal places
 
 	// Weighted latency: average latency weighted by replica count.
 	weightedLatency := calculateWeightedLatency(dist, clusterMetrics)

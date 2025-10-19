@@ -14,7 +14,7 @@ const (
 	Name = "DistributionScorer"
 
 	// Possible scenarios: power60, power80, cost60, cost80, latency60, latency80,
-	// utilization60, utilization80, fairness60, fairness80, balance
+	// utilization60, utilization80, proportionality60, proportionality80, balance
 	selectedProfile = "balance"
 )
 
@@ -194,7 +194,7 @@ func getCriteriaForProfile(profile string) map[string]CriteriaConfig {
 			"power":                {HigherIsBetter: false, Weight: 0.60},
 			"cost":                 {HigherIsBetter: false, Weight: 0.10},
 			"utilization":         {HigherIsBetter: true, Weight: 0.10},
-			"load_balance_std_dev": {HigherIsBetter: false, Weight: 0.10},
+			"proportionality": {HigherIsBetter: false, Weight: 0.10},
 			"weighted_latency":     {HigherIsBetter: false, Weight: 0.10},
 		}
 	case "power80":
@@ -202,7 +202,7 @@ func getCriteriaForProfile(profile string) map[string]CriteriaConfig {
 			"power":                {HigherIsBetter: false, Weight: 0.80},
 			"cost":                 {HigherIsBetter: false, Weight: 0.05},
 			"utilization":         {HigherIsBetter: true, Weight: 0.05},
-			"load_balance_std_dev": {HigherIsBetter: false, Weight: 0.05},
+			"proportionality": {HigherIsBetter: false, Weight: 0.05},
 			"weighted_latency":     {HigherIsBetter: false, Weight: 0.05},
 		}
 	// minimizes monetary cost
@@ -211,7 +211,7 @@ func getCriteriaForProfile(profile string) map[string]CriteriaConfig {
 			"power":                {HigherIsBetter: false, Weight: 0.10},
 			"cost":                 {HigherIsBetter: false, Weight: 0.60},
 			"utilization":         {HigherIsBetter: true, Weight: 0.10},
-			"load_balance_std_dev": {HigherIsBetter: false, Weight: 0.10},
+			"proportionality": {HigherIsBetter: false, Weight: 0.10},
 			"weighted_latency":     {HigherIsBetter: false, Weight: 0.10},
 		}
 	case "cost80":
@@ -219,7 +219,7 @@ func getCriteriaForProfile(profile string) map[string]CriteriaConfig {
 			"power":                {HigherIsBetter: false, Weight: 0.05},
 			"cost":                 {HigherIsBetter: false, Weight: 0.80},
 			"utilization":         {HigherIsBetter: true, Weight: 0.05},
-			"load_balance_std_dev": {HigherIsBetter: false, Weight: 0.05},
+			"proportionality": {HigherIsBetter: false, Weight: 0.05},
 			"weighted_latency":     {HigherIsBetter: false, Weight: 0.05},
 		}
 	// prioritizes low-latency clusters 
@@ -228,7 +228,7 @@ func getCriteriaForProfile(profile string) map[string]CriteriaConfig {
 			"power":                {HigherIsBetter: false, Weight: 0.10},
 			"cost":                 {HigherIsBetter: false, Weight: 0.10},
 			"utilization":         {HigherIsBetter: true, Weight: 0.10},
-			"load_balance_std_dev": {HigherIsBetter: false, Weight: 0.10},
+			"proportionality": {HigherIsBetter: false, Weight: 0.10},
 			"weighted_latency":     {HigherIsBetter: false, Weight: 0.60},
 		}
 	case "latency80":
@@ -236,7 +236,7 @@ func getCriteriaForProfile(profile string) map[string]CriteriaConfig {
 			"power":                {HigherIsBetter: false, Weight: 0.05},
 			"cost":                 {HigherIsBetter: false, Weight: 0.05},
 			"utilization":  {HigherIsBetter: true, Weight: 0.05},
-			"load_balance_std_dev": {HigherIsBetter: false, Weight: 0.05},
+			"proportionality": {HigherIsBetter: false, Weight: 0.05},
 			"weighted_latency":     {HigherIsBetter: false, Weight: 0.80},
 		}
 	// aims to maximize resource utilization across clusters
@@ -245,7 +245,7 @@ func getCriteriaForProfile(profile string) map[string]CriteriaConfig {
 			"power":                {HigherIsBetter: false, Weight: 0.10},
 			"cost":                 {HigherIsBetter: false, Weight: 0.10},
 			"utilization":         {HigherIsBetter: true, Weight: 0.60},
-			"load_balance_std_dev": {HigherIsBetter: false, Weight: 0.10},
+			"proportionality": {HigherIsBetter: false, Weight: 0.10},
 			"weighted_latency":     {HigherIsBetter: false, Weight: 0.10},
 		}
 	case "utilization80":
@@ -253,25 +253,24 @@ func getCriteriaForProfile(profile string) map[string]CriteriaConfig {
 			"power":                {HigherIsBetter: false, Weight: 0.05},
 			"cost":                 {HigherIsBetter: false, Weight: 0.05},
 			"utilization":         {HigherIsBetter: true, Weight: 0.80},
-			"load_balance_std_dev": {HigherIsBetter: false, Weight: 0.05},
+			"proportionality": {HigherIsBetter: false, Weight: 0.05},
 			"weighted_latency":     {HigherIsBetter: false, Weight: 0.05},
 		}
-	// focuses on balancing load across clusters to avoid overloading any single cluster
-	// while still considering other factors
-	case "fairness60":
+	// focuses on balancing load across clusters based on their CPU capacities
+	case "proportionality60":
 		return map[string]CriteriaConfig{
 			"power":                {HigherIsBetter: false, Weight: 0.10},
 			"cost":                 {HigherIsBetter: false, Weight: 0.10},
 			"utilization":         {HigherIsBetter: true, Weight: 0.10},
-			"load_balance_std_dev": {HigherIsBetter: false, Weight: 0.60},
+			"proportionality": {HigherIsBetter: false, Weight: 0.60},
 			"weighted_latency":     {HigherIsBetter: false, Weight: 0.10},
 		}
-	case "fairness80":
+	case "proportionality80":
 		return map[string]CriteriaConfig{
 			"power":                {HigherIsBetter: false, Weight: 0.05},
 			"cost":                 {HigherIsBetter: false, Weight: 0.05},
 			"utilization":         {HigherIsBetter: true, Weight: 0.05},
-			"load_balance_std_dev": {HigherIsBetter: false, Weight: 0.80},
+			"proportionality": {HigherIsBetter: false, Weight: 0.80},
 			"weighted_latency":     {HigherIsBetter: false, Weight: 0.05},
 		}
 	// a balanced approach that doesn't overly prioritize any single criterion but
@@ -283,7 +282,7 @@ func getCriteriaForProfile(profile string) map[string]CriteriaConfig {
 			"power":                {HigherIsBetter: false, Weight: 0.20},
 			"cost":                 {HigherIsBetter: false, Weight: 0.20},
 			"utilization":         {HigherIsBetter: true, Weight: 0.20},
-			"load_balance_std_dev": {HigherIsBetter: false, Weight: 0.20},
+			"proportionality": {HigherIsBetter: false, Weight: 0.20},
 			"weighted_latency":     {HigherIsBetter: false, Weight: 0.20},
 		}
 	}

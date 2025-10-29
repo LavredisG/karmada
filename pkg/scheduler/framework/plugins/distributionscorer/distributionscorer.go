@@ -13,8 +13,8 @@ import (
 const (
 	Name = "DistributionScorer"
 
-	// Possible scenarios: power60, power80, cost60, cost80, latency60, latency80,
-	// utilization60, utilization80, proportionality60, proportionality80, balance
+	// Possible scenarios: power30, power50, cost30, cost50, latency30, latency50,
+	// utilization30, utilization50, proportionality30, proportionality50, balance
 	selectedProfile = "balance"
 )
 
@@ -189,89 +189,89 @@ func getCriteriaForProfile(profile string) map[string]CriteriaConfig {
 	// This function should return the criteria configuration based on the selected profile
 	switch profile {
 	// prioritizes power-efficient allocations
-	case "power60":
+	case "power30":
 		return map[string]CriteriaConfig{
-			"power":                {HigherIsBetter: false, Weight: 0.60},
-			"cost":                 {HigherIsBetter: false, Weight: 0.10},
-			"utilization":         {HigherIsBetter: true, Weight: 0.10},
-			"proportionality": {HigherIsBetter: false, Weight: 0.10},
-			"weighted_latency":     {HigherIsBetter: false, Weight: 0.10},
+			"power":                {HigherIsBetter: false, Weight: 0.300},
+			"cost":                 {HigherIsBetter: false, Weight: 0.175},
+			"utilization":         {HigherIsBetter: true, Weight: 0.175},
+			"proportionality": {HigherIsBetter: false, Weight: 0.175},
+			"weighted_latency":     {HigherIsBetter: false, Weight: 0.175},
 		}
-	case "power80":
+	case "power50":
 		return map[string]CriteriaConfig{
-			"power":                {HigherIsBetter: false, Weight: 0.80},
-			"cost":                 {HigherIsBetter: false, Weight: 0.05},
-			"utilization":         {HigherIsBetter: true, Weight: 0.05},
-			"proportionality": {HigherIsBetter: false, Weight: 0.05},
-			"weighted_latency":     {HigherIsBetter: false, Weight: 0.05},
+			"power":                {HigherIsBetter: false, Weight: 0.500},
+			"cost":                 {HigherIsBetter: false, Weight: 0.125},
+			"utilization":         {HigherIsBetter: true, Weight: 0.125},
+			"proportionality": {HigherIsBetter: false, Weight: 0.125},
+			"weighted_latency":     {HigherIsBetter: false, Weight: 0.125},
 		}
 	// minimizes monetary cost
-	case "cost60":
+	case "cost30":
 		return map[string]CriteriaConfig{
-			"power":                {HigherIsBetter: false, Weight: 0.10},
-			"cost":                 {HigherIsBetter: false, Weight: 0.60},
-			"utilization":         {HigherIsBetter: true, Weight: 0.10},
-			"proportionality": {HigherIsBetter: false, Weight: 0.10},
-			"weighted_latency":     {HigherIsBetter: false, Weight: 0.10},
+			"power":                {HigherIsBetter: false, Weight: 0.175},
+			"cost":                 {HigherIsBetter: false, Weight: 0.300},
+			"utilization":         {HigherIsBetter: true, Weight: 0.175},
+			"proportionality": {HigherIsBetter: false, Weight: 0.175},
+			"weighted_latency":     {HigherIsBetter: false, Weight: 0.175},
 		}
-	case "cost80":
+	case "cost50":
 		return map[string]CriteriaConfig{
-			"power":                {HigherIsBetter: false, Weight: 0.05},
-			"cost":                 {HigherIsBetter: false, Weight: 0.80},
-			"utilization":         {HigherIsBetter: true, Weight: 0.05},
-			"proportionality": {HigherIsBetter: false, Weight: 0.05},
-			"weighted_latency":     {HigherIsBetter: false, Weight: 0.05},
+			"power":                {HigherIsBetter: false, Weight: 0.125},
+			"cost":                 {HigherIsBetter: false, Weight: 0.500},
+			"utilization":         {HigherIsBetter: true, Weight: 0.125},
+			"proportionality": {HigherIsBetter: false, Weight: 0.125},
+			"weighted_latency":     {HigherIsBetter: false, Weight: 0.125},
 		}
 	// prioritizes low-latency clusters 
-	case "latency60":
+	case "latency30":
 		return map[string]CriteriaConfig{
-			"power":                {HigherIsBetter: false, Weight: 0.10},
-			"cost":                 {HigherIsBetter: false, Weight: 0.10},
-			"utilization":         {HigherIsBetter: true, Weight: 0.10},
-			"proportionality": {HigherIsBetter: false, Weight: 0.10},
-			"weighted_latency":     {HigherIsBetter: false, Weight: 0.60},
+			"power":                {HigherIsBetter: false, Weight: 0.175},
+			"cost":                 {HigherIsBetter: false, Weight: 0.175},
+			"utilization":         {HigherIsBetter: true, Weight: 0.175},
+			"proportionality": {HigherIsBetter: false, Weight: 0.175},
+			"weighted_latency":     {HigherIsBetter: false, Weight: 0.300},
 		}
-	case "latency80":
+	case "latency50":
 		return map[string]CriteriaConfig{
-			"power":                {HigherIsBetter: false, Weight: 0.05},
-			"cost":                 {HigherIsBetter: false, Weight: 0.05},
-			"utilization":  {HigherIsBetter: true, Weight: 0.05},
-			"proportionality": {HigherIsBetter: false, Weight: 0.05},
-			"weighted_latency":     {HigherIsBetter: false, Weight: 0.80},
+			"power":                {HigherIsBetter: false, Weight: 0.125},
+			"cost":                 {HigherIsBetter: false, Weight: 0.125},
+			"utilization":  {HigherIsBetter: true, Weight: 0.125},
+			"proportionality": {HigherIsBetter: false, Weight: 0.125},
+			"weighted_latency":     {HigherIsBetter: false, Weight: 0.500},
 		}
 	// aims to maximize resource utilization across clusters
-	case "utilization60":
+	case "utilization30":
 		return map[string]CriteriaConfig{
-			"power":                {HigherIsBetter: false, Weight: 0.10},
-			"cost":                 {HigherIsBetter: false, Weight: 0.10},
-			"utilization":         {HigherIsBetter: true, Weight: 0.60},
-			"proportionality": {HigherIsBetter: false, Weight: 0.10},
-			"weighted_latency":     {HigherIsBetter: false, Weight: 0.10},
+			"power":                {HigherIsBetter: false, Weight: 0.175},
+			"cost":                 {HigherIsBetter: false, Weight: 0.175},
+			"utilization":         {HigherIsBetter: true, Weight: 0.300},
+			"proportionality": {HigherIsBetter: false, Weight: 0.175},
+			"weighted_latency":     {HigherIsBetter: false, Weight: 0.175},
 		}
-	case "utilization80":
+	case "utilization50":
 		return map[string]CriteriaConfig{
-			"power":                {HigherIsBetter: false, Weight: 0.05},
-			"cost":                 {HigherIsBetter: false, Weight: 0.05},
-			"utilization":         {HigherIsBetter: true, Weight: 0.80},
-			"proportionality": {HigherIsBetter: false, Weight: 0.05},
-			"weighted_latency":     {HigherIsBetter: false, Weight: 0.05},
+			"power":                {HigherIsBetter: false, Weight: 0.125},
+			"cost":                 {HigherIsBetter: false, Weight: 0.125},
+			"utilization":         {HigherIsBetter: true, Weight: 0.500},
+			"proportionality": {HigherIsBetter: false, Weight: 0.125},
+			"weighted_latency":     {HigherIsBetter: false, Weight: 0.125},
 		}
 	// focuses on balancing load across clusters based on their CPU capacities
-	case "proportionality60":
+	case "proportionality30":
 		return map[string]CriteriaConfig{
-			"power":                {HigherIsBetter: false, Weight: 0.10},
-			"cost":                 {HigherIsBetter: false, Weight: 0.10},
-			"utilization":         {HigherIsBetter: true, Weight: 0.10},
-			"proportionality": {HigherIsBetter: false, Weight: 0.60},
-			"weighted_latency":     {HigherIsBetter: false, Weight: 0.10},
+			"power":                {HigherIsBetter: false, Weight: 0.175},
+			"cost":                 {HigherIsBetter: false, Weight: 0.175},
+			"utilization":         {HigherIsBetter: true, Weight: 0.175},
+			"proportionality": {HigherIsBetter: false, Weight: 0.300},
+			"weighted_latency":     {HigherIsBetter: false, Weight: 0.175},
 		}
-	case "proportionality80":
+	case "proportionality50":
 		return map[string]CriteriaConfig{
-			"power":                {HigherIsBetter: false, Weight: 0.05},
-			"cost":                 {HigherIsBetter: false, Weight: 0.05},
-			"utilization":         {HigherIsBetter: true, Weight: 0.05},
-			"proportionality": {HigherIsBetter: false, Weight: 0.80},
-			"weighted_latency":     {HigherIsBetter: false, Weight: 0.05},
+			"power":                {HigherIsBetter: false, Weight: 0.125},
+			"cost":                 {HigherIsBetter: false, Weight: 0.125},
+			"utilization":         {HigherIsBetter: true, Weight: 0.125},
+			"proportionality": {HigherIsBetter: false, Weight: 0.500},
+			"weighted_latency":     {HigherIsBetter: false, Weight: 0.125},
 		}
 	// a balanced approach that doesn't overly prioritize any single criterion but
 	// balances all criteria equally

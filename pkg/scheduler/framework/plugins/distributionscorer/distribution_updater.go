@@ -12,7 +12,7 @@ const (
 	distributionUpdaterEndpoint = "http://172.18.0.1:6001/weights"
 )	
 
-// UpdateClusterWeights sends the weights οφ the best distribution to the updater server
+// UpdateClusterWeights sends the weights of the best distribution to the updater server
 func UpdateClusterWeights(distribution *Distribution) {
 	if distribution == nil {
 		klog.Error("Cannot update cluster weights: nil distribution")
